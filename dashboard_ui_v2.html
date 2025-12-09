@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>성도기록부 - 대시보드</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-bg: #F8F6F3;
+      --color-surface: #FFFFFF;
+      --color-primary: #2C3E50;
+      --color-secondary: #8B7355;
+      --color-accent: #C9A962;
+      --color-accent-light: #F5EFE0;
+      --color-text: #2C3E50;
+      --color-text-light: #6B7B8C;
+      --color-success: #4A9B7F;
+      --color-warning: #E8985E;
+      --color-border: #E8E4DF;
+      --shadow-soft: 0 2px 20px rgba(44, 62, 80, 0.06);
+      --shadow-medium: 0 8px 32px rgba(44, 62, 80, 0.08);
+      --shadow-glow: 0 0 40px rgba(201, 169, 98, 0.15);
+      --radius-sm: 12px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--color-bg);
+      color: var(--color-text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Background Pattern */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 20%, rgba(201, 169, 98, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(139, 115, 85, 0.06) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.5) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: linear-gradient(180deg, var(--color-primary) 0%, #1a2a3a 100%);
+      padding: 32px 0;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      height: 100vh;
+      box-shadow: 4px 0 24px rgba(44, 62, 80, 0.15);
+      overflow-y: auto;
+    }
+
+    /* Sidebar Scrollbar */
+    .sidebar::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .sidebar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+    }
+
+    .logo {
+      padding: 0 28px 32px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 24px;
+    }
+
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--color-accent) 0%, #D4B87A 100%);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 16px rgba(201, 169, 98, 0.3);
+    }
+
+    .logo-icon svg {
+      width: 28px;
+      height: 28px;
+      fill: white;
+    }
+
+    .logo-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: white;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-subtitle {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.5);
+      margin-top: 4px;
+      letter-spacing: 1px;
+    }
+
+    .nav-section {
+      padding: 0 16px;
+      margin-bottom: 20px;
+    }
+
+    .nav-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.35);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      padding: 0 12px;
+      margin-bottom: 12px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      color: rgba(255, 255, 255, 0.65);
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-bottom: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .nav-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--color-accent);
+      transform: scaleY(0);
+      transition: transform 0.3s ease;
+      border-radius: 0 2px 2px 0;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: white;
+    }
+
+    .nav-item.active {
+      background: rgba(201, 169, 98, 0.15);
+      color: white;
+    }
+
+    .nav-item.active::before {
+      transform: scaleY(1);
+    }
+
+    .nav-item svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      opacity: 0.8;
+    }
+
+    .nav-item.active svg {
+      opacity: 1;
+    }
+
+    .nav-item span {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    /* Sub Navigation */
+    .nav-sub {
+      margin-left: 20px;
+      padding-left: 16px;
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+      margin-top: 4px;
+      margin-bottom: 8px;
+    }
+
+    .nav-sub .nav-item {
+      padding: 10px 14px;
+      font-size: 13px;
+    }
+
+    .nav-sub .nav-item svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 24px 28px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-accent) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+    }
+
+    .user-details {
+      flex: 1;
+    }
+
+    .user-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: white;
+    }
+
+    .user-role {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      margin-left: 280px;
+      padding: 32px 40px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 36px;
+    }
+
+    .header-left h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 32px;
+      font-weight: 600;
+      color: var(--color-primary);
+      margin-bottom: 8px;
+    }
+
+    .header-left p {
+      font-size: 14px;
+      color: var(--color-text-light);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .date-display {
+      background: var(--color-surface);
+      padding: 12px 20px;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .date-display svg {
+      width: 18px;
+      height: 18px;
+      color: var(--color-accent);
+    }
+
+    .date-display span {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--color-primary);
+    }
+
+    .notification-btn {
+      width: 48px;
+      height: 48px;
+      background: var(--color-surface);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--shadow-soft);
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .notification-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-medium);
+    }
+
+    .notification-btn svg {
+      width: 20px;
+      height: 20px;
+      color: var(--color-text-light);
+    }
+
+    .notification-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 10px;
+      height: 10px;
+      background: var(--color-warning);
+      border-radius: 50%;
+      border: 2px solid var(--color-surface);
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      margin-bottom: 36px;
+    }
+
+    .stat-card {
+      background: var(--color-surface);
+      border-radius: var(--radius-md);
+      padding: 28px;
+      box-shadow: var(--shadow-soft);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--color-accent), var(--color-secondary));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-medium), var(--shadow-glow);
+    }
+
+    .stat-card:hover::before {
+      opacity: 1;
+    }
+
+    .stat-card.highlight {
+      background: linear-gradient(135deg, var(--color-primary) 0%, #3d5a73 100%);
+      color: white;
+    }
+
+    .stat-card.highlight::before {
+      background: linear-gradient(90deg, var(--color-accent), #E8D5A8);
+      opacity: 1;
+    }
+
+    .stat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .stat-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .stat-icon.blue { background: linear-gradient(135deg, #E8F4FD 0%, #D1E9FA 100%); }
+    .stat-icon.green { background: linear-gradient(135deg, #E8F5F0 0%, #D1EBE3 100%); }
+    .stat-icon.gold { background: linear-gradient(135deg, #FDF8E8 0%, #F5EFD1 100%); }
+    .stat-icon.purple { background: linear-gradient(135deg, #F3E8FD 0%, #E5D1FA 100%); }
+    .stat-icon.white { background: rgba(255, 255, 255, 0.2); }
+
+    .stat-icon svg {
+      width: 26px;
+      height: 26px;
+    }
+
+    .stat-icon.blue svg { color: #3498db; }
+    .stat-icon.green svg { color: #4A9B7F; }
+    .stat-icon.gold svg { color: var(--color-accent); }
+    .stat-icon.purple svg { color: #9b59b6; }
+    .stat-icon.white svg { color: white; }
+
+    .stat-trend {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    .stat-trend.up {
+      background: rgba(74, 155, 127, 0.12);
+      color: var(--color-success);
+    }
+
+    .stat-trend.down {
+      background: rgba(232, 152, 94, 0.12);
+      color: var(--color-warning);
+    }
+
+    .stat-card.highlight .stat-trend {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+
+    .stat-value {
+      font-size: 42px;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 8px;
+      font-family: 'Playfair Display', serif;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: var(--color-text-light);
+      font-weight: 500;
+    }
+
+    .stat-card.highlight .stat-label {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Content Grid */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 28px;
+    }
+
+    .card {
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--color-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-title svg {
+      width: 20px;
+      height: 20px;
+      color: var(--color-accent);
+    }
+
+    .card-action {
+      font-size: 13px;
+      color: var(--color-secondary);
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.2s ease;
+    }
+
+    .card-action:hover {
+      color: var(--color-accent);
+    }
+
+    /* Chart */
+    .chart-container {
+      height: 280px;
+      position: relative;
+      margin-top: 20px;
+    }
+
+    .chart-bars {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      height: 220px;
+      padding: 0 20px;
+      border-bottom: 2px solid var(--color-border);
+      position: relative;
+    }
+
+    .chart-bar-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .chart-bar-wrapper {
+      display: flex;
+      gap: 6px;
+      height: 180px;
+      align-items: flex-end;
+    }
+
+    .chart-bar {
+      width: 28px;
+      border-radius: 6px 6px 0 0;
+      position: relative;
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .chart-bar.primary {
+      background: linear-gradient(180deg, var(--color-accent) 0%, #D4B87A 100%);
+    }
+
+    .chart-bar.secondary {
+      background: linear-gradient(180deg, #E8E4DF 0%, #D9D5D0 100%);
+    }
+
+    .chart-bar:hover {
+      transform: scaleY(1.05);
+      filter: brightness(1.1);
+    }
+
+    .chart-label {
+      font-size: 12px;
+      color: var(--color-text-light);
+      font-weight: 500;
+    }
+
+    .chart-legend {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      margin-top: 20px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--color-text-light);
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 4px;
+    }
+
+    .legend-dot.primary {
+      background: var(--color-accent);
+    }
+
+    .legend-dot.secondary {
+      background: #E8E4DF;
+    }
+
+    /* Tabs */
+    .tabs-container {
+      margin-bottom: 20px;
+    }
+
+    .tabs {
+      display: flex;
+      background: var(--color-bg);
+      border-radius: var(--radius-sm);
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text-light);
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .tab:hover {
+      color: var(--color-primary);
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    .tab.active {
+      background: var(--color-surface);
+      color: var(--color-primary);
+      box-shadow: 0 2px 8px rgba(44, 62, 80, 0.08);
+    }
+
+    .tab svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Department Stats */
+    .dept-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .dept-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px;
+      background: var(--color-bg);
+      border-radius: var(--radius-sm);
+      transition: all 0.3s ease;
+    }
+
+    .dept-item:hover {
+      background: var(--color-accent-light);
+      transform: translateX(4px);
+    }
+
+    .dept-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .dept-icon.adults { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .dept-icon.youth { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .dept-icon.teens { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .dept-icon.children { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+
+    /* Mokjang Icons */
+    .dept-icon.nepal { background: linear-gradient(135deg, #E8685C 0%, #C75B50 100%); }
+    .dept-icon.russia { background: linear-gradient(135deg, #5B8DEE 0%, #4A7BD9 100%); }
+    .dept-icon.philippines { background: linear-gradient(135deg, #FFD93D 0%, #E5C235 100%); }
+    .dept-icon.thailand { background: linear-gradient(135deg, #9B59B6 0%, #8E44AD 100%); }
+    .dept-icon.benin { background: linear-gradient(135deg, #2ECC71 0%, #27AE60 100%); }
+    .dept-icon.congo { background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%); }
+    .dept-icon.chile { background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%); }
+    .dept-icon.cheorwon { background: linear-gradient(135deg, #1ABC9C 0%, #16A085 100%); }
+
+    .dept-info {
+      flex: 1;
+    }
+
+    .dept-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-primary);
+      margin-bottom: 3px;
+    }
+
+    .dept-count {
+      font-size: 12px;
+      color: var(--color-text-light);
+    }
+
+    .dept-progress {
+      width: 90px;
+      text-align: right;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: var(--color-border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 1s ease;
+    }
+
+    .progress-fill.high { background: linear-gradient(90deg, var(--color-success), #6BC9A8); }
+    .progress-fill.medium { background: linear-gradient(90deg, var(--color-accent), #D4B87A); }
+    .progress-fill.low { background: linear-gradient(90deg, var(--color-warning), #F2B07E); }
+
+    .progress-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+
+    /* Scrollable List */
+    .scroll-list {
+      max-height: 280px;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+
+    .scroll-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .scroll-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .scroll-list::-webkit-scrollbar-thumb {
+      background: var(--color-border);
+      border-radius: 3px;
+    }
+
+    .scroll-list::-webkit-scrollbar-thumb:hover {
+      background: var(--color-secondary);
+    }
+
+    /* Alerts */
+    .alerts-section {
+      margin-top: 24px;
+    }
+
+    .alert-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .alert-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      border-left: 4px solid transparent;
+      transition: all 0.3s ease;
+    }
+
+    .alert-item.warning {
+      background: linear-gradient(90deg, rgba(232, 152, 94, 0.08) 0%, transparent 100%);
+      border-left-color: var(--color-warning);
+    }
+
+    .alert-item.info {
+      background: linear-gradient(90deg, rgba(201, 169, 98, 0.08) 0%, transparent 100%);
+      border-left-color: var(--color-accent);
+    }
+
+    .alert-item:hover {
+      transform: translateX(4px);
+    }
+
+    .alert-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .alert-icon.warning {
+      background: rgba(232, 152, 94, 0.15);
+      color: var(--color-warning);
+    }
+
+    .alert-icon.info {
+      background: rgba(201, 169, 98, 0.15);
+      color: var(--color-accent);
+    }
+
+    .alert-icon svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .alert-content {
+      flex: 1;
+    }
+
+    .alert-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-primary);
+      margin-bottom: 3px;
+    }
+
+    .alert-desc {
+      font-size: 12px;
+      color: var(--color-text-light);
+      line-height: 1.5;
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--color-border);
+    }
+
+    .quick-actions-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-light);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 14px;
+    }
+
+    .action-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 12px;
+      background: var(--color-bg);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+    }
+
+    .action-btn:hover {
+      background: var(--color-accent-light);
+      border-color: var(--color-accent);
+      transform: translateY(-2px);
+    }
+
+    .action-btn svg {
+      width: 22px;
+      height: 22px;
+      color: var(--color-secondary);
+    }
+
+    .action-btn:hover svg {
+      color: var(--color-accent);
+    }
+
+    .action-btn span {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--color-text);
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .stat-card { animation: fadeInUp 0.6s ease forwards; }
+    .stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .stat-card:nth-child(2) { animation-delay: 0.2s; }
+    .stat-card:nth-child(3) { animation-delay: 0.3s; }
+    .stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+    .card { animation: fadeInUp 0.6s ease forwards; animation-delay: 0.5s; opacity: 0; }
+    .content-grid .card:nth-child(2) { animation-delay: 0.6s; }
+
+    @keyframes growBar {
+      from { height: 0; }
+    }
+
+    .chart-bar {
+      animation: growBar 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      animation-delay: 0.8s;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--color-bg);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--color-border);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--color-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.8L18.5 8 12 11.2 5.5 8 12 4.8zM4 9.54l7 3.5v6.42l-7-3.5V9.54zm9 9.92v-6.42l7-3.5v6.42l-7 3.5z"/>
+          </svg>
+        </div>
+        <div class="logo-text">성도기록부</div>
+        <div class="logo-subtitle">SAINT RECORD SYSTEM</div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">메인</div>
+        <div class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="9" rx="1"/>
+            <rect x="14" y="3" width="7" height="5" rx="1"/>
+            <rect x="14" y="12" width="7" height="9" rx="1"/>
+            <rect x="3" y="16" width="7" height="5" rx="1"/>
+          </svg>
+          <span>대시보드</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+            <rect x="9" y="3" width="6" height="4" rx="1"/>
+            <path d="M9 14l2 2 4-4"/>
+          </svg>
+          <span>출석 입력</span>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">관리</div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="7" r="4"/>
+            <path d="M5.5 21a8.5 8.5 0 0113 0"/>
+          </svg>
+          <span>성도 관리</span>
+        </div>
+        <div class="nav-sub">
+          <div class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="7" r="4"/>
+              <path d="M5.5 21a8.5 8.5 0 0113 0"/>
+            </svg>
+            <span>성도</span>
+          </div>
+          <div class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            <span>가정</span>
+          </div>
+          <div class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+              <path d="M16 3.13a4 4 0 010 7.75"/>
+            </svg>
+            <span>목장</span>
+          </div>
+          <div class="nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <path d="M3 9h18"/>
+              <path d="M9 21V9"/>
+            </svg>
+            <span>부서</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">조회</div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <span>검색</span>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-label">분석</div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 20V10"/>
+            <path d="M12 20V4"/>
+            <path d="M6 20v-6"/>
+          </svg>
+          <span>통계 / 보고서</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+          </svg>
+          <span>설정</span>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">교</div>
+          <div class="user-details">
+            <div class="user-name">교적담당자</div>
+            <div class="user-role">관리자</div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-left">
+          <h1>대시보드</h1>
+          <p>예봄교회 성도 현황을 한눈에 확인하세요</p>
+        </div>
+        <div class="header-right">
+          <div class="date-display">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <path d="M16 2v4"/>
+              <path d="M8 2v4"/>
+              <path d="M3 10h18"/>
+            </svg>
+            <span>2025년 1월 5일 (일)</span>
+          </div>
+          <div class="notification-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 106 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 01-3.46 0"/>
+            </svg>
+            <div class="notification-badge"></div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon blue">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                <path d="M16 3.13a4 4 0 010 7.75"/>
+              </svg>
+            </div>
+            <div class="stat-trend up">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 4l-8 8h5v8h6v-8h5z"/>
+              </svg>
+              +2
+            </div>
+          </div>
+          <div class="stat-value">199</div>
+          <div class="stat-label">전체 성도</div>
+        </div>
+
+        <div class="stat-card highlight">
+          <div class="stat-header">
+            <div class="stat-icon white">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                <path d="M22 4L12 14.01l-3-3"/>
+              </svg>
+            </div>
+            <div class="stat-trend up">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 4l-8 8h5v8h6v-8h5z"/>
+              </svg>
+              +5
+            </div>
+          </div>
+          <div class="stat-value">148</div>
+          <div class="stat-label">금주 출석</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+            </div>
+            <div class="stat-trend up">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 4l-8 8h5v8h6v-8h5z"/>
+              </svg>
+              +2.3%
+            </div>
+          </div>
+          <div class="stat-value">74.4<span style="font-size: 24px; font-weight: 500;">%</span></div>
+          <div class="stat-label">출석률</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon gold">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <line x1="19" y1="8" x2="19" y2="14"/>
+                <line x1="22" y1="11" x2="16" y2="11"/>
+              </svg>
+            </div>
+            <div class="stat-trend down">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="transform: rotate(180deg)">
+                <path d="M12 4l-8 8h5v8h6v-8h5z"/>
+              </svg>
+              -1
+            </div>
+          </div>
+          <div class="stat-value">3</div>
+          <div class="stat-label">신규 등록</div>
+        </div>
+      </div>
+
+      <!-- Content Grid -->
+      <div class="content-grid">
+        <!-- Chart Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 20V10"/>
+                <path d="M12 20V4"/>
+                <path d="M6 20v-6"/>
+              </svg>
+              최근 4주 출석 현황
+            </h2>
+            <div class="card-action">
+              자세히 보기
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 18l6-6-6-6"/>
+              </svg>
+            </div>
+          </div>
+          <div class="chart-container">
+            <div class="chart-bars">
+              <div class="chart-bar-group">
+                <div class="chart-bar-wrapper">
+                  <div class="chart-bar primary" style="height: 140px;"></div>
+                  <div class="chart-bar secondary" style="height: 180px;"></div>
+                </div>
+                <div class="chart-label">12/15</div>
+              </div>
+              <div class="chart-bar-group">
+                <div class="chart-bar-wrapper">
+                  <div class="chart-bar primary" style="height: 155px;"></div>
+                  <div class="chart-bar secondary" style="height: 180px;"></div>
+                </div>
+                <div class="chart-label">12/22</div>
+              </div>
+              <div class="chart-bar-group">
+                <div class="chart-bar-wrapper">
+                  <div class="chart-bar primary" style="height: 120px;"></div>
+                  <div class="chart-bar secondary" style="height: 180px;"></div>
+                </div>
+                <div class="chart-label">12/29</div>
+              </div>
+              <div class="chart-bar-group">
+                <div class="chart-bar-wrapper">
+                  <div class="chart-bar primary" style="height: 165px;"></div>
+                  <div class="chart-bar secondary" style="height: 180px;"></div>
+                </div>
+                <div class="chart-label">1/5</div>
+              </div>
+            </div>
+            <div class="chart-legend">
+              <div class="legend-item">
+                <div class="legend-dot primary"></div>
+                <span>출석 인원</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot secondary"></div>
+                <span>전체 인원</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M3 9h18"/>
+                <path d="M9 21V9"/>
+              </svg>
+              출석 현황
+            </h2>
+          </div>
+
+          <!-- Tabs -->
+          <div class="tabs-container">
+            <div class="tabs">
+              <button class="tab active" onclick="switchTab('dept')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <path d="M3 9h18"/>
+                  <path d="M9 21V9"/>
+                </svg>
+                부서별
+              </button>
+              <button class="tab" onclick="switchTab('mokjang')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 010 7.75"/>
+                </svg>
+                목장별
+              </button>
+            </div>
+          </div>
+
+          <!-- Department Tab Content -->
+          <div id="tab-dept" class="tab-content active">
+            <div class="dept-list">
+              <div class="dept-item">
+                <div class="dept-icon adults">👨‍👩‍👧</div>
+                <div class="dept-info">
+                  <div class="dept-name">장년부</div>
+                  <div class="dept-count">85 / 108명</div>
+                </div>
+                <div class="dept-progress">
+                  <div class="progress-bar">
+                    <div class="progress-fill high" style="width: 79%;"></div>
+                  </div>
+                  <div class="progress-text">79%</div>
+                </div>
+              </div>
+              <div class="dept-item">
+                <div class="dept-icon youth">🎓</div>
+                <div class="dept-info">
+                  <div class="dept-name">청년부</div>
+                  <div class="dept-count">27 / 36명</div>
+                </div>
+                <div class="dept-progress">
+                  <div class="progress-bar">
+                    <div class="progress-fill high" style="width: 75%;"></div>
+                  </div>
+                  <div class="progress-text">75%</div>
+                </div>
+              </div>
+              <div class="dept-item">
+                <div class="dept-icon teens">🎒</div>
+                <div class="dept-info">
+                  <div class="dept-name">청소년부</div>
+                  <div class="dept-count">14 / 23명</div>
+                </div>
+                <div class="dept-progress">
+                  <div class="progress-bar">
+                    <div class="progress-fill low" style="width: 61%;"></div>
+                  </div>
+                  <div class="progress-text">61%</div>
+                </div>
+              </div>
+              <div class="dept-item">
+                <div class="dept-icon children">🧒</div>
+                <div class="dept-info">
+                  <div class="dept-name">어린이부</div>
+                  <div class="dept-count">22 / 32명</div>
+                </div>
+                <div class="dept-progress">
+                  <div class="progress-bar">
+                    <div class="progress-fill medium" style="width: 69%;"></div>
+                  </div>
+                  <div class="progress-text">69%</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mokjang Tab Content -->
+          <div id="tab-mokjang" class="tab-content">
+            <div class="scroll-list">
+              <div class="dept-list">
+                <div class="dept-item">
+                  <div class="dept-icon nepal">🇳🇵</div>
+                  <div class="dept-info">
+                    <div class="dept-name">네팔 목장</div>
+                    <div class="dept-count">11 / 12명</div>
+                  </div>
+                  <div class="dept-progress">
+                    <div class="progress-bar">
+                      <div class="progress-fill high" style="width: 92%;"></div>
+                    </div>
+                    <div class="progress-text">92%</div>
+                  </div>
+                </div>
+                <div class="dept-item">
+                  <div class="dept-icon russia">🇷🇺</div>
+                  <div class="dept-info">
+                    <div class="dept-name">러시아 목장</div>
+                    <div class="dept-count">9 / 11명</div>
+                  </div>
+                  <div class="dept-progress">
+                    <div class="progress-bar">
+                      <div class="progress-fill high" style="width: 82%;"></div>
+                    </div>
+                    <div class="progress-text">82%</div>
+                  </div>
+                </div>
+                <div class="dept-item">
+                  <div class="dept-icon philippines">🇵🇭</div>
+                  <div class="dept-info">
+                    <div class="dept-name">필리핀 목장</div>
+                    <div class="dept-count">10 / 13명</div>
+                  </div>
+                  <div class="dept-progress">
+                    <div class="progress-bar">
+                      <div class="progress-fill high" style="width: 77%;"></div>
+                    </div>
+                    <div class="progress-text">77%</div>
+                  </div>
+                </div>
+                <div class="dept-item">
+                  <div class="dept-icon thailand">🇹🇭</div>
+                  <div class="dept-info">
+                    <div class="dept-name">태국 목장</div>
+                    <div class="dept-count">8 / 10명</div>
+                  </div>
+                  <div class="dept-progress">
+                    <div class="progress-bar">
+                      <div class="progress-fill high" style="width: 80%;"></div>
+                    </div>
+                    <div class="progress-text">80%</div>
+                  </div>
+                </div>
+                <div class="dept-item">
+                  <div class="dept-icon benin">🇧🇯</div>
+                  <div class="dept-info">
+                    <div class="dept-name">베냉 목장</div>
+                    <div class="dept-count">7 / 11명</div>
+                  </div>
+                  <div class="dept-progress">
+                    <div class="progress-bar">
+                      <div class="progress-fill low" style="width: 64%;"></div>
+                    </div>
+                    <div class="progress-text">64%</div>
+                  </div>
+                </div>
+                <div class="dept-item">
+                  <div class="dept-icon congo">🇨🇩</div>
+                  <div class="dept-info">
+                    <div class="dept-name">콩고 목장</div>
+                    <div class="dept-count">10 / 12명</div>
+                  </div>
+                  <div class="dept-progress">
+                    <div class="progress-bar">
+                      <div class="progress-fill high" style="width: 83%;"></div>
+                    </div>
+                    <div class="progress-text">83%</div>
+                  </div>
+                </div>
+                <div class="dept-item">
+                  <div class="dept-icon chile">🇨🇱</div>
+                  <div class="dept-info">
+                    <div class="dept-name">칠레 목장</div>
+                    <div class="dept-count">8 / 10명</div>
+                  </div>
+                  <div class="dept-progress">
+                    <div class="progress-bar">
+                      <div class="progress-fill high" style="width: 80%;"></div>
+                    </div>
+                    <div class="progress-text">80%</div>
+                  </div>
+                </div>
+                <div class="dept-item">
+                  <div class="dept-icon cheorwon">🏔️</div>
+                  <div class="dept-info">
+                    <div class="dept-name">철원 목장</div>
+                    <div class="dept-count">6 / 9명</div>
+                  </div>
+                  <div class="dept-progress">
+                    <div class="progress-bar">
+                      <div class="progress-fill medium" style="width: 67%;"></div>
+                    </div>
+                    <div class="progress-text">67%</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Alerts -->
+          <div class="alerts-section">
+            <div class="card-header" style="margin-bottom: 14px;">
+              <h2 class="card-title" style="font-size: 15px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 8A6 6 0 106 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                  <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                </svg>
+                알림
+              </h2>
+            </div>
+            <div class="alert-list">
+              <div class="alert-item warning">
+                <div class="alert-icon warning">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                </div>
+                <div class="alert-content">
+                  <div class="alert-title">3주 연속 결석</div>
+                  <div class="alert-desc">김OO, 박OO 외 3명</div>
+                </div>
+              </div>
+              <div class="alert-item info">
+                <div class="alert-icon info">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
+                    <line x1="7" y1="7" x2="7.01" y2="7"/>
+                  </svg>
+                </div>
+                <div class="alert-content">
+                  <div class="alert-title">🎂 이번 주 생일</div>
+                  <div class="alert-desc">이OO (1/7), 최OO (1/9)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="quick-actions">
+            <div class="quick-actions-title">빠른 실행</div>
+            <div class="action-buttons">
+              <div class="action-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+                  <rect x="9" y="3" width="6" height="4" rx="1"/>
+                  <path d="M9 14l2 2 4-4"/>
+                </svg>
+                <span>출석 입력</span>
+              </div>
+              <div class="action-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <line x1="19" y1="8" x2="19" y2="14"/>
+                  <line x1="22" y1="11" x2="16" y2="11"/>
+                </svg>
+                <span>성도 등록</span>
+              </div>
+              <div class="action-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <path d="M21 21l-4.35-4.35"/>
+                </svg>
+                <span>성도 검색</span>
+              </div>
+              <div class="action-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                  <path d="M14 2v6h6"/>
+                  <path d="M16 13H8"/>
+                  <path d="M16 17H8"/>
+                  <path d="M10 9H8"/>
+                </svg>
+                <span>보고서</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    function switchTab(tabName) {
+      // Remove active class from all tabs
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      // Hide all tab contents
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      
+      // Activate clicked tab
+      event.currentTarget.classList.add('active');
+      
+      // Show corresponding content
+      document.getElementById('tab-' + tabName).classList.add('active');
+    }
+  </script>
+</body>
+</html>
