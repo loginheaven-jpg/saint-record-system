@@ -40,6 +40,10 @@ def load_custom_css():
         header[data-testid="stHeader"], footer { display: none !important; }
         #MainMenu { display: none; }
 
+        /* Hide Streamlit default page navigation (small icons at top) */
+        [data-testid="stSidebarNav"] { display: none !important; }
+        section[data-testid="stSidebar"] > div:first-child > div:first-child { display: none !important; }
+
         /* Main content area */
         .main .block-container {
             padding: 32px 40px !important;
@@ -517,63 +521,52 @@ def render_stat_card(icon_name, icon_color, value, label, trend_val, trend_dir, 
 
 def render_dept_item(emoji, css_class, name, current, total):
     percent = int(current / total * 100) if total > 0 else 0
-    if percent >= 75:
-        progress_class = "high"
-    elif percent >= 65:
-        progress_class = "medium"
-    else:
-        progress_class = "low"
 
-    return f"""
-    <div class="dept-item">
-        <div class="dept-icon {css_class}">{emoji}</div>
-        <div class="dept-info">
-            <div class="dept-name">{name}</div>
-            <div class="dept-count">{current} / {total}명</div>
-        </div>
-        <div class="dept-progress">
-            <div class="progress-bar">
-                <div class="progress-fill {progress_class}" style="width: {percent}%;"></div>
-            </div>
-            <div class="progress-text">{percent}%</div>
-        </div>
-    </div>
-    """
+    # Progress bar gradient based on percentage
+    if percent >= 75:
+        progress_bg = "linear-gradient(90deg, #4A9B7F, #6BC9A8)"
+    elif percent >= 65:
+        progress_bg = "linear-gradient(90deg, #C9A962, #D4B87A)"
+    else:
+        progress_bg = "linear-gradient(90deg, #E8985E, #F2B07E)"
+
+    # Icon gradient based on css_class
+    icon_gradients = {
+        "adults": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        "youth": "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+        "teens": "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+        "children": "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
+        "nepal": "linear-gradient(135deg, #E8685C 0%, #C75B50 100%)",
+        "russia": "linear-gradient(135deg, #5B8DEE 0%, #4A7BD9 100%)",
+        "philippines": "linear-gradient(135deg, #FFD93D 0%, #E5C235 100%)",
+        "thailand": "linear-gradient(135deg, #9B59B6 0%, #8E44AD 100%)",
+        "benin": "linear-gradient(135deg, #2ECC71 0%, #27AE60 100%)",
+        "congo": "linear-gradient(135deg, #3498DB 0%, #2980B9 100%)",
+        "chile": "linear-gradient(135deg, #E74C3C 0%, #C0392B 100%)",
+        "cheorwon": "linear-gradient(135deg, #1ABC9C 0%, #16A085 100%)",
+    }
+    icon_bg = icon_gradients.get(css_class, "linear-gradient(135deg, #667eea 0%, #764ba2 100%)")
+
+    return f'''<div style="display:flex;align-items:center;gap:14px;padding:14px;background:#F8F6F3;border-radius:12px;margin-bottom:12px;"><div style="width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;background:{icon_bg};">{emoji}</div><div style="flex:1;"><div style="font-size:14px;font-weight:600;color:#2C3E50;margin-bottom:3px;">{name}</div><div style="font-size:12px;color:#6B7B8C;">{current} / {total}명</div></div><div style="width:90px;text-align:right;"><div style="height:6px;background:#E8E4DF;border-radius:3px;overflow:hidden;margin-bottom:6px;"><div style="width:{percent}%;height:100%;background:{progress_bg};border-radius:3px;"></div></div><div style="font-size:13px;font-weight:600;color:#2C3E50;">{percent}%</div></div></div>'''
 
 def render_alert_item(alert_type, icon_name, title, desc):
     icon_svg = get_icon_svg(icon_name)
-    return f"""
-    <div class="alert-item {alert_type}">
-        <div class="alert-icon {alert_type}">{icon_svg}</div>
-        <div class="alert-content">
-            <div class="alert-title">{title}</div>
-            <div class="alert-desc">{desc}</div>
-        </div>
-    </div>
-    """
+
+    if alert_type == "warning":
+        bg_style = "background:linear-gradient(90deg,rgba(232,152,94,0.08) 0%,transparent 100%);border-left:4px solid #E8985E;"
+        icon_bg = "background:rgba(232,152,94,0.15);color:#E8985E;"
+    else:
+        bg_style = "background:linear-gradient(90deg,rgba(201,169,98,0.08) 0%,transparent 100%);border-left:4px solid #C9A962;"
+        icon_bg = "background:rgba(201,169,98,0.15);color:#C9A962;"
+
+    return f'''<div style="display:flex;align-items:flex-start;gap:14px;padding:14px;border-radius:12px;{bg_style}margin-bottom:12px;"><div style="width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;{icon_bg}">{icon_svg}</div><div style="flex:1;"><div style="font-size:13px;font-weight:600;color:#2C3E50;margin-bottom:3px;">{title}</div><div style="font-size:12px;color:#6B7B8C;line-height:1.5;">{desc}</div></div></div>'''
 
 def render_quick_action(icon_name, label, href="#"):
     icon_svg = get_icon_svg(icon_name)
-    return f"""
-    <a class="action-btn" href="{href}">
-        {icon_svg}
-        <span>{label}</span>
-    </a>
-    """
+    return f'''<a href="{href}" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 12px;background:#F8F6F3;border-radius:12px;text-decoration:none;border:2px solid transparent;">{icon_svg}<span style="font-size:12px;font-weight:500;color:#2C3E50;">{label}</span></a>'''
 
 def render_chart_legend():
-    return """
-    <div class="chart-legend">
-        <div class="legend-item">
-            <div class="legend-dot primary"></div>
-            <span>출석 인원</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-dot secondary"></div>
-            <span>전체 인원</span>
-        </div>
-    </div>
-    """
+    return '''<div style="display:flex;justify-content:center;gap:32px;margin-top:20px;"><div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#6B7B8C;"><div style="width:12px;height:12px;border-radius:4px;background:#C9A962;"></div><span>출석 인원</span></div><div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#6B7B8C;"><div style="width:12px;height:12px;border-radius:4px;background:#E8E4DF;"></div><span>전체 인원</span></div></div>'''
 
 def render_list_item(icon, name, count, percent, icon_bg):
     if percent >= 75:

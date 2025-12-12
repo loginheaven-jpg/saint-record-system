@@ -559,82 +559,41 @@ with left_col:
 
 # 오른쪽: 출석 현황 (탭 + 알림 + 빠른 실행)
 with right_col:
-    st.markdown(textwrap.dedent('''
-    <div class="custom-card">
-        <div class="card-header">
-            <h2 class="card-title">
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color: #4A9B7F;">
-                    <rect x="3" y="3" width="18" height="18" rx="2"/>
-                    <path d="M3 9h18"/>
-                    <path d="M9 21V9"/>
-                </svg>
-                출석 현황
-            </h2>
-        </div>
-    '''), unsafe_allow_html=True)
+    st.markdown('''<div style="background:#FFFFFF;border-radius:24px;padding:28px;box-shadow:0 2px 20px rgba(44,62,80,0.06);"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;"><h2 style="font-size:18px;font-weight:600;color:#2C3E50;display:flex;align-items:center;gap:10px;margin:0;"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;color:#4A9B7F;"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>출석 현황</h2></div>''', unsafe_allow_html=True)
 
     # 탭 (Streamlit 네이티브 탭 사용)
     tab_dept, tab_mokjang = st.tabs(["부서별", "목장별"])
 
     with tab_dept:
         # 부서별 출석 현황
-        dept_html = '<div class="dept-list">'
-        dept_html += render_dept_item("👨‍👩‍👧", "adults", "장년부", 85, 108)
-        dept_html += render_dept_item("🎓", "youth", "청년부", 27, 36)
-        dept_html += render_dept_item("🎒", "teens", "청소년부", 14, 23)
-        dept_html += render_dept_item("🧒", "children", "어린이부", 22, 32)
-        dept_html += '</div>'
-        st.markdown(dept_html, unsafe_allow_html=True)
+        st.markdown(render_dept_item("👨‍👩‍👧", "adults", "장년부", 85, 108), unsafe_allow_html=True)
+        st.markdown(render_dept_item("🎓", "youth", "청년부", 27, 36), unsafe_allow_html=True)
+        st.markdown(render_dept_item("🎒", "teens", "청소년부", 14, 23), unsafe_allow_html=True)
+        st.markdown(render_dept_item("🧒", "children", "어린이부", 22, 32), unsafe_allow_html=True)
 
     with tab_mokjang:
         # 목장별 출석 현황
-        mokjang_html = '<div class="scroll-list"><div class="dept-list">'
-        mokjang_html += render_dept_item("🇳🇵", "nepal", "네팔 목장", 11, 12)
-        mokjang_html += render_dept_item("🇷🇺", "russia", "러시아 목장", 9, 11)
-        mokjang_html += render_dept_item("🇵🇭", "philippines", "필리핀 목장", 10, 13)
-        mokjang_html += render_dept_item("🇹🇭", "thailand", "태국 목장", 8, 10)
-        mokjang_html += render_dept_item("🇧🇯", "benin", "베냉 목장", 7, 11)
-        mokjang_html += render_dept_item("🇨🇩", "congo", "콩고 목장", 10, 12)
-        mokjang_html += render_dept_item("🇨🇱", "chile", "칠레 목장", 8, 10)
-        mokjang_html += render_dept_item("🏔️", "cheorwon", "철원 목장", 6, 9)
-        mokjang_html += '</div></div>'
-        st.markdown(mokjang_html, unsafe_allow_html=True)
+        st.markdown(render_dept_item("🇳🇵", "nepal", "네팔 목장", 11, 12), unsafe_allow_html=True)
+        st.markdown(render_dept_item("🇷🇺", "russia", "러시아 목장", 9, 11), unsafe_allow_html=True)
+        st.markdown(render_dept_item("🇵🇭", "philippines", "필리핀 목장", 10, 13), unsafe_allow_html=True)
+        st.markdown(render_dept_item("🇹🇭", "thailand", "태국 목장", 8, 10), unsafe_allow_html=True)
+        st.markdown(render_dept_item("🇧🇯", "benin", "베냉 목장", 7, 11), unsafe_allow_html=True)
+        st.markdown(render_dept_item("🇨🇩", "congo", "콩고 목장", 10, 12), unsafe_allow_html=True)
+        st.markdown(render_dept_item("🇨🇱", "chile", "칠레 목장", 8, 10), unsafe_allow_html=True)
+        st.markdown(render_dept_item("🏔️", "cheorwon", "철원 목장", 6, 9), unsafe_allow_html=True)
 
     # 알림 섹션
-    alerts_html = '''
-    <div class="alerts-section">
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; color: #C9A962;">
-                <path d="M18 8A6 6 0 106 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                <path d="M13.73 21a2 2 0 01-3.46 0"/>
-            </svg>
-            <span style="font-size: 15px; font-weight: 600; color: #2C3E50;">알림</span>
-        </div>
-        <div class="alert-list">
-    '''
-    alerts_html += render_alert_item("warning", "warning", "3주 연속 결석", "김OO, 박OO 외 3명")
-    alerts_html += render_alert_item("info", "gift", "🎂 이번 주 생일", "이OO (12/15), 최OO (12/17)")
-    alerts_html += '''
-        </div>
-    </div>
-    '''
-    st.markdown(alerts_html, unsafe_allow_html=True)
+    st.markdown('''<div style="margin-top:24px;padding-top:20px;border-top:1px solid #E8E4DF;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;color:#C9A962;"><path d="M18 8A6 6 0 106 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span style="font-size:15px;font-weight:600;color:#2C3E50;">알림</span></div></div>''', unsafe_allow_html=True)
+    st.markdown(render_alert_item("warning", "warning", "3주 연속 결석", "김OO, 박OO 외 3명"), unsafe_allow_html=True)
+    st.markdown(render_alert_item("info", "gift", "🎂 이번 주 생일", "이OO (12/15), 최OO (12/17)"), unsafe_allow_html=True)
 
     # 빠른 실행 버튼
-    quick_html = '''
-    <div class="quick-actions">
-        <div class="quick-actions-title">빠른 실행</div>
-        <div class="action-buttons">
-    '''
-    quick_html += render_quick_action("clipboard", "출석 입력", "/출석입력")
-    quick_html += render_quick_action("user-plus", "성도 등록", "/성도관리")
-    quick_html += render_quick_action("search", "성도 검색", "/검색")
-    quick_html += render_quick_action("file", "보고서", "/통계")
-    quick_html += '''
-        </div>
-    </div>
-    '''
-    st.markdown(quick_html, unsafe_allow_html=True)
+    st.markdown('''<div style="margin-top:20px;padding-top:20px;border-top:1px solid #E8E4DF;"><div style="font-size:12px;font-weight:600;color:#6B7B8C;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">빠른 실행</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">''', unsafe_allow_html=True)
+    quick_btns = render_quick_action("clipboard", "출석 입력", "/출석입력")
+    quick_btns += render_quick_action("user-plus", "성도 등록", "/성도관리")
+    quick_btns += render_quick_action("search", "성도 검색", "/검색")
+    quick_btns += render_quick_action("file", "보고서", "/통계")
+    st.markdown(quick_btns + '</div></div>', unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
 
