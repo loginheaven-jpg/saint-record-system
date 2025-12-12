@@ -6,9 +6,13 @@ import pandas as pd
 from typing import List, Dict, Optional
 import streamlit as st
 import os
+import json
 
 from .validators import MemberCreate, MemberUpdate, AttendanceCreate
 from .apps_script_client import AppsScriptClient
+
+# 상수
+SHEET_ID = '1cDfZiWbbpV8Z9NwAauG3SAriarJ1HL9xXMkZMJhC5Jo'
 
 
 class SheetsAPI:
@@ -17,58 +21,51 @@ class SheetsAPI:
             'https://spreadsheets.google.com/feeds',
             'https://www.googleapis.com/auth/drive'
         ]
-        
-        # Streamlit Secrets 또는 로컬 credentials.json
-        # Streamlit Secrets 또는 로컬 credentials.json
-        used_secrets = False
-        try:
-            if hasattr(st, "secrets") and "gcp_service_account" in st.secrets:
-                creds_dict = st.secrets["gcp_service_account"]
-                creds = ServiceAccountCredentials.from_json_keyfile_dict(
-                    dict(creds_dict), self.scope
-                )
-                self.sheet_name = st.secrets.get("sheet_name", "성도기록부_시스템")
-                self.script_url = st.secrets.get("apps_script_url", "")
-                used_secrets = True
-        except Exception:
-            # secrets.toml이 없거나 형식이 잘못된 경우 무시하고 로컬 파일 시도
-            pass
-            
-        if not used_secrets:
-            # 로컬 개발/마이그레이션용
-            base_dir = os.path.dirname(os.path.abspath(__file__)) # saint-record-system/utils
-            project_dir = os.path.dirname(base_dir) # saint-record-system
-            root_dir = os.path.dirname(project_dir) # #yebom
-            
+        self.sheet_id = SHEET_ID
+        self.script_url = os.environ.get('APPS_SCRIPT_URL', '')
+
+        creds = None
+
+        # 1순위: 환경변수 (Railway 배포용)
+        gcp_json = os.environ.get('GCP_CREDENTIALS_JSON')
+        if gcp_json:
+            try:
+                creds_dict = json.loads(gcp_json)
+                creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, self.scope)
+            except Exception as e:
+                print(f"환경변수 인증 실패: {e}")
+
+        # 2순위: Streamlit Secrets
+        if not creds:
+            try:
+                if hasattr(st, "secrets") and "gcp_service_account" in st.secrets:
+                    creds_dict = dict(st.secrets["gcp_service_account"])
+                    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, self.scope)
+                    self.script_url = st.secrets.get("apps_script_url", self.script_url)
+            except Exception:
+                pass
+
+        # 3순위: 로컬 credentials.json 파일
+        if not creds:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            project_dir = os.path.dirname(base_dir)
+            root_dir = os.path.dirname(project_dir)
+
             possible_paths = [
                 os.path.join(project_dir, 'credentials', 'credentials.json'),
                 os.path.join(root_dir, 'credentials', 'credentials.json')
             ]
-            
-            creds_path = None
+
             for path in possible_paths:
                 if os.path.exists(path):
-                    creds_path = path
+                    creds = ServiceAccountCredentials.from_json_keyfile_name(path, self.scope)
                     break
-            
-            if creds_path:
-                print(f"DEBUG: Found credentials at {creds_path}")
-                creds = ServiceAccountCredentials.from_json_keyfile_name(
-                    creds_path, self.scope
-                )
-                self.sheet_name = "성도기록부_시스템" # 기본값
-                # Sheet ID 사용 (마이그레이션 스크립트와 동일하게)
-                self.sheet_id = '1cDfZiWbbpV8Z9NwAauG3SAriarJ1HL9xXMkZMJhC5Jo'
-                self.script_url = "" # Local fallback
-        
-        if creds:
-            self.client = gspread.authorize(creds)
-            if hasattr(self, 'sheet_id') and self.sheet_id:
-                 self.spreadsheet = self.client.open_by_key(self.sheet_id)
-            else:
-                 self.spreadsheet = self.client.open(self.sheet_name)
-        
-        # Apps Script 클라이언트
+
+        if not creds:
+            raise Exception("인증 정보를 찾을 수 없습니다. 환경변수 GCP_CREDENTIALS_JSON을 설정하세요.")
+
+        self.client = gspread.authorize(creds)
+        self.spreadsheet = self.client.open_by_key(self.sheet_id)
         self.apps_script = AppsScriptClient(self.script_url)
     
     def get_sheet(self, name: str):
