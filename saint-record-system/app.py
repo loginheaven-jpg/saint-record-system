@@ -5,7 +5,10 @@ import pandas as pd
 import plotly.graph_objects as go
 from utils.sheets_api import SheetsAPI
 import textwrap
-from utils.ui import load_custom_css, render_stat_card, render_bar_chart, render_list_item
+from utils.ui import (
+    load_custom_css, render_stat_card, render_dept_item,
+    render_alert_item, render_quick_action, render_chart_legend
+)
 
 # ============================================================
 # 1. 페이지 설정 (반드시 첫 번째로 실행)
@@ -447,21 +450,19 @@ trend_str = f"{trend_sign}{diff}"
 stat_cols = st.columns(4)
 
 with stat_cols[0]:
-    # stat_card(icon, value, label, trend, trend_direction, icon_color, highlight) -> local old
-    # render_stat_card(icon_name, icon_color, value, label, trend_val, trend_dir, is_highlight) -> utils new
-    html_0 = render_stat_card("👥", "blue", str(val_total), "전체 성도", "+2", "up", False)
+    html_0 = render_stat_card("users", "blue", str(val_total), "전체 성도", "+2", "up", False)
     st.markdown(html_0, unsafe_allow_html=True)
 
 with stat_cols[1]:
-    html_1 = render_stat_card("✓", "green", str(val_attend), "금주 출석", trend_str, trend_dir, True)
+    html_1 = render_stat_card("check", "white", str(val_attend), "금주 출석", trend_str, trend_dir, True)
     st.markdown(html_1, unsafe_allow_html=True)
 
 with stat_cols[2]:
-    html_2 = render_stat_card("📈", "green", f"{attend_rate:.1f}%", "출석률", "+2.3%", "up", False)
+    html_2 = render_stat_card("chart", "green", f"{attend_rate:.1f}%", "출석률", "+2.3%", "up", False)
     st.markdown(html_2, unsafe_allow_html=True)
 
 with stat_cols[3]:
-    html_3 = render_stat_card("➕", "gold", "3", "신규 등록", "-1", "down", False)
+    html_3 = render_stat_card("user-plus", "gold", "3", "신규 등록", "-1", "down", False)
     st.markdown(html_3, unsafe_allow_html=True)
 
 st.markdown("<div style='height: 36px;'></div>", unsafe_allow_html=True)
@@ -514,7 +515,6 @@ with left_col:
         y=total_data,
         name='전체',
         marker_color='#F5EFE0',
-        marker_func=None,
         hoverinfo='none'
     ))
     
@@ -551,46 +551,90 @@ with left_col:
     )
     
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
+
+    # 차트 레전드
+    st.markdown(render_chart_legend(), unsafe_allow_html=True)
+
     st.markdown("</div>", unsafe_allow_html=True)
 
-# 오른쪽: 부서별 현황
+# 오른쪽: 출석 현황 (탭 + 알림 + 빠른 실행)
 with right_col:
     st.markdown(textwrap.dedent('''
-    <div style="
-        background: #FFFFFF;
-        border-radius: 24px;
-        padding: 28px;
-        box-shadow: 0 2px 20px rgba(44, 62, 80, 0.06);
-        height: 100%;
-        min-height: 380px;
-    ">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-            <h2 style="
-                font-size: 18px;
-                font-weight: 600;
-                color: #2C3E50;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                margin: 0;
-            ">
-                <span style="color: #4A9B7F;">👥</span>
-                부서별 출석률
+    <div class="custom-card">
+        <div class="card-header">
+            <h2 class="card-title">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color: #4A9B7F;">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <path d="M3 9h18"/>
+                    <path d="M9 21V9"/>
+                </svg>
+                출석 현황
             </h2>
-            <span style="font-size: 13px; color: #8B7355; font-weight: 500; cursor: pointer;">전체보기 ›</span>
         </div>
     '''), unsafe_allow_html=True)
-    
-    # 리스트 아이템
-    # render_list_item(icon, name, count, percent, icon_bg)
-    html_list = ""
-    html_list += render_list_item("👨‍💼", "장년부", "85/92명", 92, "#E8F4FD")
-    html_list += render_list_item("🧑‍🎓", "청년부", "42/55명", 76, "#E8F5F0")
-    html_list += render_list_item("🧒", "주일학교", "28/35명", 80, "#FDF8E8")
-    html_list += render_list_item("👶", "영유아부", "12/20명", 60, "#F3E8FD")
-    
-    st.markdown(html_list, unsafe_allow_html=True)
-    
+
+    # 탭 (Streamlit 네이티브 탭 사용)
+    tab_dept, tab_mokjang = st.tabs(["부서별", "목장별"])
+
+    with tab_dept:
+        # 부서별 출석 현황
+        dept_html = '<div class="dept-list">'
+        dept_html += render_dept_item("👨‍👩‍👧", "adults", "장년부", 85, 108)
+        dept_html += render_dept_item("🎓", "youth", "청년부", 27, 36)
+        dept_html += render_dept_item("🎒", "teens", "청소년부", 14, 23)
+        dept_html += render_dept_item("🧒", "children", "어린이부", 22, 32)
+        dept_html += '</div>'
+        st.markdown(dept_html, unsafe_allow_html=True)
+
+    with tab_mokjang:
+        # 목장별 출석 현황
+        mokjang_html = '<div class="scroll-list"><div class="dept-list">'
+        mokjang_html += render_dept_item("🇳🇵", "nepal", "네팔 목장", 11, 12)
+        mokjang_html += render_dept_item("🇷🇺", "russia", "러시아 목장", 9, 11)
+        mokjang_html += render_dept_item("🇵🇭", "philippines", "필리핀 목장", 10, 13)
+        mokjang_html += render_dept_item("🇹🇭", "thailand", "태국 목장", 8, 10)
+        mokjang_html += render_dept_item("🇧🇯", "benin", "베냉 목장", 7, 11)
+        mokjang_html += render_dept_item("🇨🇩", "congo", "콩고 목장", 10, 12)
+        mokjang_html += render_dept_item("🇨🇱", "chile", "칠레 목장", 8, 10)
+        mokjang_html += render_dept_item("🏔️", "cheorwon", "철원 목장", 6, 9)
+        mokjang_html += '</div></div>'
+        st.markdown(mokjang_html, unsafe_allow_html=True)
+
+    # 알림 섹션
+    alerts_html = '''
+    <div class="alerts-section">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; color: #C9A962;">
+                <path d="M18 8A6 6 0 106 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 01-3.46 0"/>
+            </svg>
+            <span style="font-size: 15px; font-weight: 600; color: #2C3E50;">알림</span>
+        </div>
+        <div class="alert-list">
+    '''
+    alerts_html += render_alert_item("warning", "warning", "3주 연속 결석", "김OO, 박OO 외 3명")
+    alerts_html += render_alert_item("info", "gift", "🎂 이번 주 생일", "이OO (12/15), 최OO (12/17)")
+    alerts_html += '''
+        </div>
+    </div>
+    '''
+    st.markdown(alerts_html, unsafe_allow_html=True)
+
+    # 빠른 실행 버튼
+    quick_html = '''
+    <div class="quick-actions">
+        <div class="quick-actions-title">빠른 실행</div>
+        <div class="action-buttons">
+    '''
+    quick_html += render_quick_action("clipboard", "출석 입력", "/출석입력")
+    quick_html += render_quick_action("user-plus", "성도 등록", "/성도관리")
+    quick_html += render_quick_action("search", "성도 검색", "/검색")
+    quick_html += render_quick_action("file", "보고서", "/통계")
+    quick_html += '''
+        </div>
+    </div>
+    '''
+    st.markdown(quick_html, unsafe_allow_html=True)
+
     st.markdown("</div>", unsafe_allow_html=True)
 
