@@ -2,11 +2,18 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Set locale for Korean/Unicode file names
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV PYTHONIOENCODING=utf-8
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    locales \
+    && rm -rf /var/lib/apt/lists/* \
+    && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 
 # Copy requirements first for caching
 COPY requirements.txt .
