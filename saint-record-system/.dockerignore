@@ -1,0 +1,31 @@
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Credentials (should use Railway env vars)
+credentials/
+*.json
+
+# Local Streamlit secrets
+.streamlit/secrets.toml
+
+# Misc
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
