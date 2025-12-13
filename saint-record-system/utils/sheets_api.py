@@ -266,3 +266,231 @@ class SheetsAPI:
         sheet = self.get_sheet('FaithEvents')
         df = pd.DataFrame(sheet.get_all_records())
         return df[df['member_id'] == member_id]
+
+    # ===== 대시보드용 집계 함수 =====
+
+    def get_department_attendance(self, date: str) -> List[Dict]:
+        """
+        부서별 출석 현황
+        Returns: [{'dept_id': '1', 'name': '장년부', 'emoji': '👨‍👩‍👧', 'css_class': 'adults',
+                   'total': 108, 'present': 85, 'rate': 78.7}, ...]
+        """
+        # 부서 매핑
+        dept_mapping = {
+            '1': {'name': '장년부', 'emoji': '👨‍👩‍👧', 'css_class': 'adults'},
+            '2': {'name': '청년부', 'emoji': '🎓', 'css_class': 'youth'},
+            '3': {'name': '청소년부', 'emoji': '🎒', 'css_class': 'teens'},
+            '4': {'name': '어린이부', 'emoji': '🧒', 'css_class': 'children'},
+        }
+
+        # 재적 성도 조회
+        members = self.get_members({'status': '재적'})
+        if members.empty:
+            return []
+
+        # 출석 데이터 조회
+        year = int(date[:4])
+        attendance = self.get_attendance(year, date=date)
+
+        results = []
+        for dept_id, info in dept_mapping.items():
+            dept_members = members[members['dept_id'].astype(str) == dept_id]
+            total = len(dept_members)
+
+            if total == 0:
+                continue
+
+            # 출석자 수 (attend_type '1' 또는 '2')
+            if not attendance.empty:
+                dept_attendance = attendance[
+                    attendance['member_id'].isin(dept_members['member_id'].tolist())
+                ]
+                present = len(dept_attendance[
+                    dept_attendance['attend_type'].astype(str).isin(['1', '2'])
+                ])
+            else:
+                present = 0
+
+            results.append({
+                'dept_id': dept_id,
+                'name': info['name'],
+                'emoji': info['emoji'],
+                'css_class': info['css_class'],
+                'total': total,
+                'present': present,
+                'rate': round((present / total) * 100, 1) if total > 0 else 0
+            })
+
+        return results
+
+    def get_mokjang_attendance(self, date: str) -> List[Dict]:
+        """
+        목장별 출석 현황
+        Returns: [{'group_id': '1', 'name': '네팔 목장', 'emoji': '🇳🇵', 'css_class': 'nepal',
+                   'total': 12, 'present': 11, 'rate': 91.7}, ...]
+        """
+        # 목장 매핑
+        mokjang_mapping = {
+            '1': {'name': '네팔 목장', 'emoji': '🇳🇵', 'css_class': 'nepal'},
+            '2': {'name': '러시아 목장', 'emoji': '🇷🇺', 'css_class': 'russia'},
+            '3': {'name': '필리핀 목장', 'emoji': '🇵🇭', 'css_class': 'philippines'},
+            '4': {'name': '태국 목장', 'emoji': '🇹🇭', 'css_class': 'thailand'},
+            '5': {'name': '베냉 목장', 'emoji': '🇧🇯', 'css_class': 'benin'},
+            '6': {'name': '콩고 목장', 'emoji': '🇨🇩', 'css_class': 'congo'},
+            '7': {'name': '칠레 목장', 'emoji': '🇨🇱', 'css_class': 'chile'},
+            '8': {'name': '철원 목장', 'emoji': '🏔️', 'css_class': 'cheorwon'},
+        }
+
+        # 재적 성도 조회
+        members = self.get_members({'status': '재적'})
+        if members.empty:
+            return []
+
+        # 출석 데이터 조회
+        year = int(date[:4])
+        attendance = self.get_attendance(year, date=date)
+
+        results = []
+        for group_id, info in mokjang_mapping.items():
+            group_members = members[members['group_id'].astype(str) == group_id]
+            total = len(group_members)
+
+            if total == 0:
+                continue
+
+            # 출석자 수
+            if not attendance.empty:
+                group_attendance = attendance[
+                    attendance['member_id'].isin(group_members['member_id'].tolist())
+                ]
+                present = len(group_attendance[
+                    group_attendance['attend_type'].astype(str).isin(['1', '2'])
+                ])
+            else:
+                present = 0
+
+            results.append({
+                'group_id': group_id,
+                'name': info['name'],
+                'emoji': info['emoji'],
+                'css_class': info['css_class'],
+                'total': total,
+                'present': present,
+                'rate': round((present / total) * 100, 1) if total > 0 else 0
+            })
+
+        return results
+
+    def get_new_members_this_month(self) -> Dict:
+        """
+        이번 달 신규 등록 성도 수
+        Returns: {'count': 3, 'last_month_count': 5}
+        """
+        members = self.get_members({'status': '재적'})
+        if members.empty:
+            return {'count': 0, 'last_month_count': 0}
+
+        now = pd.Timestamp.now()
+        this_month_start = now.replace(day=1).strftime('%Y-%m-%d')
+
+        last_month = now - pd.DateOffset(months=1)
+        last_month_start = last_month.replace(day=1).strftime('%Y-%m-%d')
+        last_month_end = (now.replace(day=1) - pd.Timedelta(days=1)).strftime('%Y-%m-%d')
+
+        # 이번 달 신규
+        this_month_new = members[members['created_at'] >= this_month_start]
+
+        # 지난 달 신규
+        last_month_new = members[
+            (members['created_at'] >= last_month_start) &
+            (members['created_at'] <= last_month_end)
+        ]
+
+        return {
+            'count': len(this_month_new),
+            'last_month_count': len(last_month_new)
+        }
+
+    def get_3week_absent_members(self) -> List[Dict]:
+        """
+        3주 연속 결석 성도 목록
+        Returns: [{'member_id': 'M001', 'name': '홍길동', 'weeks_absent': 3}, ...]
+        """
+        now = pd.Timestamp.now()
+        # 지난 일요일
+        days_since_sunday = (now.weekday() + 1) % 7
+        last_sunday = now - pd.Timedelta(days=days_since_sunday)
+
+        members = self.get_members({'status': '재적'})
+        if members.empty:
+            return []
+
+        # 최근 3주 일요일 날짜들
+        sundays = [
+            (last_sunday - pd.Timedelta(weeks=i)).strftime('%Y-%m-%d')
+            for i in range(3)
+        ]
+
+        year = int(sundays[0][:4])
+        absent_candidates = {}
+
+        for member_id in members['member_id'].tolist():
+            absent_count = 0
+            for sunday in sundays:
+                attendance = self.get_attendance(year, date=sunday, member_ids=[member_id])
+                if attendance.empty:
+                    absent_count += 1
+                elif not attendance[attendance['attend_type'].astype(str).isin(['1', '2'])].empty:
+                    break  # 출석했으면 패스
+                else:
+                    absent_count += 1
+
+            if absent_count >= 3:
+                member_info = members[members['member_id'] == member_id].iloc[0]
+                absent_candidates[member_id] = {
+                    'member_id': member_id,
+                    'name': member_info['name'],
+                    'weeks_absent': absent_count
+                }
+
+        return list(absent_candidates.values())
+
+    def get_birthdays_this_week(self) -> List[Dict]:
+        """
+        이번 주 생일 성도 목록
+        Returns: [{'member_id': 'M001', 'name': '홍길동', 'birth_date': '12/15'}, ...]
+        """
+        members = self.get_members({'status': '재적'})
+        if members.empty:
+            return []
+
+        now = pd.Timestamp.now()
+        # 이번 주 시작(월요일)과 끝(일요일)
+        week_start = now - pd.Timedelta(days=now.weekday())
+        week_end = week_start + pd.Timedelta(days=6)
+
+        # 이번 주의 월-일 범위
+        week_dates = [
+            (week_start + pd.Timedelta(days=i)).strftime('%m-%d')
+            for i in range(7)
+        ]
+
+        birthdays = []
+        for _, member in members.iterrows():
+            birth_date = member.get('birth_date', '')
+            if not birth_date or pd.isna(birth_date):
+                continue
+
+            try:
+                # birth_date가 YYYY-MM-DD 형식이라고 가정
+                birth_mm_dd = str(birth_date)[5:10]  # MM-DD 부분 추출
+                if birth_mm_dd in week_dates:
+                    birthdays.append({
+                        'member_id': member['member_id'],
+                        'name': member['name'],
+                        'birth_date': birth_mm_dd.replace('-', '/')
+                    })
+            except:
+                continue
+
+        return birthdays

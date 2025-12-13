@@ -41,32 +41,38 @@ def get_dashboard_data():
         "total_members": 0,
         "current_attend": 0,
         "last_week_attend": 0,
-        "new_members": 0,
+        "new_members": {'count': 0, 'last_month_count': 0},
         "chart_dates": [],
         "chart_attend": [],
-        "chart_total": []
+        "chart_total": [],
+        "dept_attendance": [],
+        "mokjang_attendance": [],
+        "absent_3weeks": [],
+        "birthdays": [],
+        "last_sunday": ""
     }
-    
+
     if st.session_state.get('db_connected'):
         api = st.session_state.api
         try:
             # 1. 전체 성도
             df_members = api.get_members({'status': '재적'})
             data['total_members'] = len(df_members)
-            
-            # 2. 이번달 신규
-            # (간단하게 구현: 가입일자 필터링은 스킵하거나 추후 구현)
-            
+
+            # 2. 이번달 신규 등록
+            data['new_members'] = api.get_new_members_this_month()
+
             # 3. 출석 데이터 (최근 4주)
             today = pd.Timestamp.today()
             last_sunday = today - datetime.timedelta(days=today.weekday() + 1)
-            
+            last_sunday_str = str(last_sunday.date())
+            data['last_sunday'] = last_sunday_str
+
             # 금주(지난주 주일) 출석
-            df_this = api.get_attendance(last_sunday.year, date=str(last_sunday.date()))
+            df_this = api.get_attendance(last_sunday.year, date=last_sunday_str)
             if not df_this.empty:
-                # attend_type 1=주일, 2=온라인 (enum 참조)
                 data['current_attend'] = len(df_this[df_this['attend_type'].astype(str).isin(['1', '2'])])
-            
+
             # 전주 출석 (트렌드 계산용)
             prev_sunday = last_sunday - datetime.timedelta(days=7)
             df_prev = api.get_attendance(prev_sunday.year, date=str(prev_sunday.date()))
@@ -80,11 +86,11 @@ def get_dashboard_data():
             dates = []
             attends = []
             totals = []
-            
+
             for i in range(3, -1, -1):
                 d = last_sunday - datetime.timedelta(days=7*i)
                 d_str = d.strftime('%Y-%m-%d')
-                
+
                 df_d = api.get_attendance(d.year, date=d_str)
                 cnt = 0
                 if not df_d.empty:
@@ -92,18 +98,36 @@ def get_dashboard_data():
                         cnt = len(df_d[df_d['attend_type'].astype(str).isin(['1', '2'])])
                     except KeyError:
                         pass
-                
+
                 dates.append(d.strftime('%m/%d'))
                 attends.append(cnt)
-                totals.append(data['total_members']) # 전체 인원은 현재 기준 근사치
-            
+                totals.append(data['total_members'])
+
             data['chart_dates'] = dates
             data['chart_attend'] = attends
             data['chart_total'] = totals
-            
+
+            # 4. 부서별 출석 현황
+            data['dept_attendance'] = api.get_department_attendance(last_sunday_str)
+
+            # 5. 목장별 출석 현황
+            data['mokjang_attendance'] = api.get_mokjang_attendance(last_sunday_str)
+
+            # 6. 3주 연속 결석자 (성능 이슈로 캐싱 권장 - 일단 구현)
+            try:
+                data['absent_3weeks'] = api.get_3week_absent_members()
+            except:
+                data['absent_3weeks'] = []
+
+            # 7. 이번 주 생일자
+            try:
+                data['birthdays'] = api.get_birthdays_this_week()
+            except:
+                data['birthdays'] = []
+
         except Exception as e:
             st.error(f"Data Load Error: {e}")
-            
+
     return data
 
 dashboard_data = get_dashboard_data()
@@ -433,6 +457,7 @@ st.markdown("<div style='height: 36px;'></div>", unsafe_allow_html=True)
 val_total = 0
 val_attend = 0
 attend_rate = 0.0
+last_attend_rate = 0.0
 diff = 0
 
 if dashboard_data['total_members'] > 0:
@@ -441,16 +466,33 @@ if dashboard_data['total_members'] > 0:
     attend_rate = (val_attend / val_total) * 100
     diff = val_attend - dashboard_data['last_week_attend']
 
+    # 지난주 출석률 (트렌드 계산용)
+    if dashboard_data['last_week_attend'] > 0:
+        last_attend_rate = (dashboard_data['last_week_attend'] / val_total) * 100
+
 # 트렌드 값 포맷팅
 trend_dir = "up" if diff >= 0 else "down"
 trend_sign = "+" if diff >= 0 else ""
 trend_str = f"{trend_sign}{diff}"
 
+# 출석률 트렌드
+rate_diff = attend_rate - last_attend_rate
+rate_trend_dir = "up" if rate_diff >= 0 else "down"
+rate_trend_str = f"{'+' if rate_diff >= 0 else ''}{rate_diff:.1f}%"
+
+# 신규 등록 데이터
+new_members_data = dashboard_data['new_members']
+new_count = new_members_data['count']
+new_last_count = new_members_data['last_month_count']
+new_diff = new_count - new_last_count
+new_trend_dir = "up" if new_diff >= 0 else "down"
+new_trend_str = f"{'+' if new_diff >= 0 else ''}{new_diff}"
+
 # 통계 카드 그리드
 stat_cols = st.columns(4)
 
 with stat_cols[0]:
-    html_0 = render_stat_card("users", "blue", str(val_total), "전체 성도", "+2", "up", False)
+    html_0 = render_stat_card("users", "blue", str(val_total), "전체 성도", trend_str, trend_dir, False)
     st.markdown(html_0, unsafe_allow_html=True)
 
 with stat_cols[1]:
@@ -458,11 +500,11 @@ with stat_cols[1]:
     st.markdown(html_1, unsafe_allow_html=True)
 
 with stat_cols[2]:
-    html_2 = render_stat_card("chart", "green", f"{attend_rate:.1f}%", "출석률", "+2.3%", "up", False)
+    html_2 = render_stat_card("chart", "green", f"{attend_rate:.1f}%", "출석률", rate_trend_str, rate_trend_dir, False)
     st.markdown(html_2, unsafe_allow_html=True)
 
 with stat_cols[3]:
-    html_3 = render_stat_card("user-plus", "gold", "3", "신규 등록", "-1", "down", False)
+    html_3 = render_stat_card("user-plus", "gold", str(new_count), "신규 등록", new_trend_str, new_trend_dir, False)
     st.markdown(html_3, unsafe_allow_html=True)
 
 st.markdown("<div style='height: 36px;'></div>", unsafe_allow_html=True)
@@ -565,34 +607,60 @@ with right_col:
     tab_dept, tab_mokjang = st.tabs(["부서별", "목장별"])
 
     with tab_dept:
-        # 부서별 출석 현황
-        st.markdown(render_dept_item("👨‍👩‍👧", "adults", "장년부", 85, 108), unsafe_allow_html=True)
-        st.markdown(render_dept_item("🎓", "youth", "청년부", 27, 36), unsafe_allow_html=True)
-        st.markdown(render_dept_item("🎒", "teens", "청소년부", 14, 23), unsafe_allow_html=True)
-        st.markdown(render_dept_item("🧒", "children", "어린이부", 22, 32), unsafe_allow_html=True)
+        # 부서별 출석 현황 (실제 DB 데이터)
+        dept_data = dashboard_data.get('dept_attendance', [])
+        if dept_data:
+            for dept in dept_data:
+                st.markdown(render_dept_item(
+                    dept['emoji'],
+                    dept['css_class'],
+                    dept['name'],
+                    dept['present'],
+                    dept['total']
+                ), unsafe_allow_html=True)
+        else:
+            st.markdown('<p style="color:#6B7B8C;font-size:14px;text-align:center;padding:20px;">데이터가 없습니다</p>', unsafe_allow_html=True)
 
     with tab_mokjang:
-        # 목장별 출석 현황
-        st.markdown(render_dept_item("🇳🇵", "nepal", "네팔 목장", 11, 12), unsafe_allow_html=True)
-        st.markdown(render_dept_item("🇷🇺", "russia", "러시아 목장", 9, 11), unsafe_allow_html=True)
-        st.markdown(render_dept_item("🇵🇭", "philippines", "필리핀 목장", 10, 13), unsafe_allow_html=True)
-        st.markdown(render_dept_item("🇹🇭", "thailand", "태국 목장", 8, 10), unsafe_allow_html=True)
-        st.markdown(render_dept_item("🇧🇯", "benin", "베냉 목장", 7, 11), unsafe_allow_html=True)
-        st.markdown(render_dept_item("🇨🇩", "congo", "콩고 목장", 10, 12), unsafe_allow_html=True)
-        st.markdown(render_dept_item("🇨🇱", "chile", "칠레 목장", 8, 10), unsafe_allow_html=True)
-        st.markdown(render_dept_item("🏔️", "cheorwon", "철원 목장", 6, 9), unsafe_allow_html=True)
+        # 목장별 출석 현황 (실제 DB 데이터)
+        mokjang_data = dashboard_data.get('mokjang_attendance', [])
+        if mokjang_data:
+            for mokjang in mokjang_data:
+                st.markdown(render_dept_item(
+                    mokjang['emoji'],
+                    mokjang['css_class'],
+                    mokjang['name'],
+                    mokjang['present'],
+                    mokjang['total']
+                ), unsafe_allow_html=True)
+        else:
+            st.markdown('<p style="color:#6B7B8C;font-size:14px;text-align:center;padding:20px;">데이터가 없습니다</p>', unsafe_allow_html=True)
 
     # 알림 섹션
     st.markdown('''<div style="margin-top:24px;padding-top:20px;border-top:1px solid #E8E4DF;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;color:#C9A962;"><path d="M18 8A6 6 0 106 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span style="font-size:15px;font-weight:600;color:#2C3E50;">알림</span></div></div>''', unsafe_allow_html=True)
-    st.markdown(render_alert_item("warning", "warning", "3주 연속 결석", "김OO, 박OO 외 3명"), unsafe_allow_html=True)
-    st.markdown(render_alert_item("info", "gift", "🎂 이번 주 생일", "이OO (12/15), 최OO (12/17)"), unsafe_allow_html=True)
+
+    # 3주 연속 결석 알림 (실제 DB 데이터)
+    absent_list = dashboard_data.get('absent_3weeks', [])
+    if absent_list:
+        names = ', '.join([m['name'] for m in absent_list[:3]])
+        extra = f" 외 {len(absent_list)-3}명" if len(absent_list) > 3 else ""
+        st.markdown(render_alert_item("warning", "warning", "3주 연속 결석", names + extra), unsafe_allow_html=True)
+    else:
+        st.markdown(render_alert_item("info", "check", "출석 양호", "3주 연속 결석자가 없습니다"), unsafe_allow_html=True)
+
+    # 이번 주 생일 알림 (실제 DB 데이터)
+    birthdays = dashboard_data.get('birthdays', [])
+    if birthdays:
+        bday_text = ', '.join([f"{b['name']} ({b['birth_date']})" for b in birthdays[:3]])
+        extra = f" 외 {len(birthdays)-3}명" if len(birthdays) > 3 else ""
+        st.markdown(render_alert_item("info", "gift", "🎂 이번 주 생일", bday_text + extra), unsafe_allow_html=True)
 
     # 빠른 실행 버튼
     st.markdown('''<div style="margin-top:20px;padding-top:20px;border-top:1px solid #E8E4DF;"><div style="font-size:12px;font-weight:600;color:#6B7B8C;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">빠른 실행</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">''', unsafe_allow_html=True)
-    quick_btns = render_quick_action("clipboard", "출석 입력", "/출석입력")
-    quick_btns += render_quick_action("user-plus", "성도 등록", "/성도관리")
-    quick_btns += render_quick_action("search", "성도 검색", "/검색")
-    quick_btns += render_quick_action("file", "보고서", "/통계")
+    quick_btns = render_quick_action("clipboard", "출석 입력", "/1_📋_출석입력")
+    quick_btns += render_quick_action("user-plus", "성도 등록", "/2_👤_성도관리")
+    quick_btns += render_quick_action("search", "성도 검색", "/4_🔍_검색")
+    quick_btns += render_quick_action("file", "보고서", "/5_📊_통계")
     st.markdown(quick_btns + '</div></div>', unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
