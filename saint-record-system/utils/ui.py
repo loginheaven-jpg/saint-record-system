@@ -50,6 +50,33 @@ def load_custom_css():
             max-width: 1400px;
         }
 
+        /* Global Font Override */
+        .main, .main *, .stMarkdown, .stMarkdown *, p, span, div, h1, h2, h3, h4, h5, h6 {
+            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif !important;
+        }
+
+        /* Playfair for headings and stat values */
+        h1, .stat-value, [style*="Playfair"] {
+            font-family: 'Playfair Display', serif !important;
+        }
+
+        /* Font size consistency */
+        .stTabs [data-baseweb="tab-list"] button {
+            font-family: 'Noto Sans KR', sans-serif !important;
+            font-size: 13px !important;
+            font-weight: 500 !important;
+        }
+
+        /* Streamlit column gap fix */
+        [data-testid="column"] {
+            padding: 0 5px !important;
+        }
+
+        /* Quick action buttons spacing */
+        [data-testid="column"] > div > div {
+            margin-bottom: 10px;
+        }
+
         /* Sidebar Styling */
         section[data-testid="stSidebar"] {
             background: linear-gradient(180deg, var(--color-primary) 0%, #1a2a3a 100%);

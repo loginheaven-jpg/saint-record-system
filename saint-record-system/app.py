@@ -36,6 +36,18 @@ if 'api' not in st.session_state:
         st.error(f"DB Error: {str(e)}")
 
 def get_dashboard_data():
+    # 캐싱: 5분 동안 데이터 재사용
+    cache_key = 'dashboard_cache'
+    cache_time_key = 'dashboard_cache_time'
+
+    import time
+    now = time.time()
+
+    # 캐시가 있고 5분 이내면 캐시 반환
+    if cache_key in st.session_state and cache_time_key in st.session_state:
+        if now - st.session_state[cache_time_key] < 300:  # 5분
+            return st.session_state[cache_key]
+
     data = {
         "total_members": 0,
         "current_attend": 0,
@@ -126,6 +138,10 @@ def get_dashboard_data():
 
         except Exception as e:
             st.error(f"Data Load Error: {e}")
+
+    # 캐시 저장
+    st.session_state[cache_key] = data
+    st.session_state[cache_time_key] = now
 
     return data
 
@@ -376,13 +392,22 @@ with right_col:
         extra = f" 외 {len(birthdays)-3}명" if len(birthdays) > 3 else ""
         st.markdown(render_alert_item("info", "gift", "🎂 이번 주 생일", bday_text + extra), unsafe_allow_html=True)
 
-    # 빠른 실행 버튼
-    st.markdown('''<div style="margin-top:20px;padding-top:20px;border-top:1px solid #E8E4DF;"><div style="font-size:12px;font-weight:600;color:#6B7B8C;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">빠른 실행</div><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">''', unsafe_allow_html=True)
-    quick_btns = render_quick_action("clipboard", "출석 입력", "/1_📋_출석입력")
-    quick_btns += render_quick_action("user-plus", "성도 등록", "/2_👤_성도관리")
-    quick_btns += render_quick_action("search", "성도 검색", "/4_🔍_검색")
-    quick_btns += render_quick_action("file", "보고서", "/5_📊_통계")
-    st.markdown(quick_btns + '</div></div>', unsafe_allow_html=True)
+    # 빠른 실행 버튼 (2x2 그리드 - st.columns 사용)
+    st.markdown('<div style="margin-top:20px;padding-top:20px;border-top:1px solid #E8E4DF;"><div style="font-size:12px;font-weight:600;color:#6B7B8C;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">빠른 실행</div>', unsafe_allow_html=True)
+
+    qa_row1 = st.columns(2)
+    with qa_row1[0]:
+        st.markdown(render_quick_action("clipboard", "출석 입력", "/1_📋_출석입력"), unsafe_allow_html=True)
+    with qa_row1[1]:
+        st.markdown(render_quick_action("user-plus", "성도 등록", "/2_👤_성도관리"), unsafe_allow_html=True)
+
+    qa_row2 = st.columns(2)
+    with qa_row2[0]:
+        st.markdown(render_quick_action("search", "성도 검색", "/4_🔍_검색"), unsafe_allow_html=True)
+    with qa_row2[1]:
+        st.markdown(render_quick_action("file", "보고서", "/5_📊_통계"), unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
 
