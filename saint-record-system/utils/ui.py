@@ -50,7 +50,7 @@ def load_custom_css():
             max-width: 1400px;
         }
 
-        /* Global Font Override */
+        /* Global Font Override - HTML 참조와 일치 */
         .main, .main *, .stMarkdown, .stMarkdown *, p, span, div, h1, h2, h3, h4, h5, h6 {
             font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif !important;
         }
@@ -60,11 +60,54 @@ def load_custom_css():
             font-family: 'Playfair Display', serif !important;
         }
 
-        /* Font size consistency */
+        /* HTML 참조 폰트 크기 강제 적용 */
+        .stMarkdown h1 {
+            font-size: 32px !important;
+            font-weight: 600 !important;
+            line-height: 1.2 !important;
+        }
+
+        .stMarkdown h2 {
+            font-size: 18px !important;
+            font-weight: 600 !important;
+        }
+
+        .stMarkdown p {
+            font-size: 14px !important;
+            line-height: 1.5 !important;
+        }
+
+        /* 탭 스타일 - HTML 참조 일치 */
+        .stTabs [data-baseweb="tab-list"] {
+            background: #F8F6F3 !important;
+            border-radius: 12px !important;
+            padding: 4px !important;
+            gap: 4px !important;
+        }
+
         .stTabs [data-baseweb="tab-list"] button {
             font-family: 'Noto Sans KR', sans-serif !important;
             font-size: 13px !important;
             font-weight: 500 !important;
+            padding: 10px 16px !important;
+            border-radius: 8px !important;
+            background: transparent !important;
+            color: #6B7B8C !important;
+        }
+
+        .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] {
+            background: #FFFFFF !important;
+            color: #2C3E50 !important;
+            box-shadow: 0 2px 8px rgba(44,62,80,0.08) !important;
+        }
+
+        .stTabs [data-baseweb="tab-panel"] {
+            padding-top: 16px !important;
+        }
+
+        /* Streamlit 기본 요소 크기 조정 */
+        .element-container {
+            font-size: 14px !important;
         }
 
         /* Streamlit column gap fix */
@@ -75,6 +118,12 @@ def load_custom_css():
         /* Quick action buttons spacing */
         [data-testid="column"] > div > div {
             margin-bottom: 10px;
+        }
+
+        /* 에러 메시지 스타일 */
+        .stAlert {
+            font-size: 13px !important;
+            border-radius: 12px !important;
         }
 
         /* Sidebar Styling */
