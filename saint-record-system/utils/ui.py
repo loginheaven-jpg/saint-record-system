@@ -178,6 +178,20 @@ def load_custom_css():
             font-weight: 500 !important;
         }
 
+        /* 서브 내비게이션 - HTML 참조 .nav-sub 스타일 */
+        .nav-sub-container {
+            margin-left: 20px;
+            padding-left: 16px;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 4px;
+            margin-bottom: 8px;
+        }
+        .nav-sub-container .stPageLink a {
+            padding: 10px 14px !important;
+            font-size: 13px !important;
+            margin: 0 0 2px !important;
+        }
+
         /* Stats Card CSS */
         .stat-card {
             background: var(--color-surface);

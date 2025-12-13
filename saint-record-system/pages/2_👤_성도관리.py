@@ -242,8 +242,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 if db_connected:
-    departments = load_departments()
-    groups = load_groups()
+    # 로딩 표시
+    with st.spinner("📊 데이터를 불러오는 중..."):
+        departments = load_departments()
+        groups = load_groups()
 
     # 세션 상태 초기화
     if 'view_mode' not in st.session_state:

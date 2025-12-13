@@ -141,7 +141,13 @@ force_refresh = st.session_state.get('force_refresh', False)
 if force_refresh:
     st.session_state['force_refresh'] = False
 
-dashboard_data = get_dashboard_data(force_refresh=force_refresh)
+# 로딩 표시 (데이터 로드 중)
+if 'dashboard_data_loaded' not in st.session_state:
+    with st.spinner("📊 데이터를 불러오는 중..."):
+        dashboard_data = get_dashboard_data(force_refresh=force_refresh)
+        st.session_state['dashboard_data_loaded'] = True
+else:
+    dashboard_data = get_dashboard_data(force_refresh=force_refresh)
 
 # ============================================================
 # 4. 사이드바 렌더링 (Streamlit 네이티브 네비게이션 사용)
@@ -166,11 +172,25 @@ def render_sidebar():
         # 성도 관리 - 실제 네비게이션 링크
         st.page_link("pages/2_👤_성도관리.py", label="👤 성도 관리")
 
+        # 서브메뉴 (가정관리)
+        st.markdown('<div class="nav-sub-container">', unsafe_allow_html=True)
+        st.page_link("pages/3_👨‍👩‍👧_가정관리.py", label="🏠 가정")
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # 조회 섹션 라벨
+        st.markdown('<div style="padding:0 0.5rem;margin-top:20px;"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;">조회</div></div>', unsafe_allow_html=True)
+
+        # 검색 페이지
+        st.page_link("pages/4_🔍_검색.py", label="🔍 검색")
+
         # 분석 섹션 라벨
         st.markdown('<div style="padding:0 0.5rem;margin-top:20px;"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;">분석</div></div>', unsafe_allow_html=True)
 
         # 통계 페이지
-        st.page_link("pages/5_📊_통계.py", label="📊 출석 통계")
+        st.page_link("pages/5_📊_통계.py", label="📊 통계 / 보고서")
+
+        # 설정 페이지
+        st.page_link("pages/6_⚙️_설정.py", label="⚙️ 설정")
 
         # 푸터
         st.markdown('<div style="margin-top:auto;padding:1.5rem 1rem;border-top:1px solid rgba(255,255,255,0.1);"><div style="display:flex;align-items:center;gap:12px;"><div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#8B7355 0%,#C9A962 100%);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:white;">교</div><div><div style="font-size:14px;font-weight:500;color:white;">교적담당자</div><div style="font-size:12px;color:rgba(255,255,255,0.5);">관리자</div></div></div></div>', unsafe_allow_html=True)

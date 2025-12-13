@@ -15,6 +15,95 @@ from .apps_script_client import AppsScriptClient
 SHEET_ID = '1cDfZiWbbpV8Z9NwAauG3SAriarJ1HL9xXMkZMJhC5Jo'
 
 
+# ============================================================
+# 전역 캐시 함수 (API 429 에러 방지)
+# ============================================================
+
+def _get_gspread_client():
+    """gspread 클라이언트 생성 (캐시용 내부 함수)"""
+    scope = [
+        'https://spreadsheets.google.com/feeds',
+        'https://www.googleapis.com/auth/drive'
+    ]
+    creds = None
+
+    # 1순위: 환경변수 (Railway 배포용)
+    gcp_json = os.environ.get('GCP_CREDENTIALS_JSON')
+    if gcp_json:
+        try:
+            creds_dict = json.loads(gcp_json)
+            creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+        except Exception:
+            pass
+
+    # 2순위: Streamlit Secrets
+    if not creds:
+        try:
+            if hasattr(st, "secrets") and "gcp_service_account" in st.secrets:
+                creds_dict = dict(st.secrets["gcp_service_account"])
+                creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+        except Exception:
+            pass
+
+    # 3순위: 로컬 credentials.json 파일
+    if not creds:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        project_dir = os.path.dirname(base_dir)
+        root_dir = os.path.dirname(project_dir)
+
+        possible_paths = [
+            os.path.join(project_dir, 'credentials', 'credentials.json'),
+            os.path.join(root_dir, 'credentials', 'credentials.json')
+        ]
+
+        for path in possible_paths:
+            if os.path.exists(path):
+                creds = ServiceAccountCredentials.from_json_keyfile_name(path, scope)
+                break
+
+    if not creds:
+        raise Exception("인증 정보를 찾을 수 없습니다.")
+
+    return gspread.authorize(creds)
+
+
+@st.cache_data(ttl=300, show_spinner=False)  # 5분 캐시
+def _cached_get_sheet_data(sheet_name: str) -> List[Dict]:
+    """시트 데이터 캐시 (5분 TTL)"""
+    try:
+        client = _get_gspread_client()
+        spreadsheet = client.open_by_key(SHEET_ID)
+        sheet = spreadsheet.worksheet(sheet_name)
+
+        try:
+            return sheet.get_all_records()
+        except Exception:
+            # 중복 헤더 문제 발생 시 직접 파싱
+            all_values = sheet.get_all_values()
+            if len(all_values) < 2:
+                return []
+            headers = all_values[0]
+            clean_headers = []
+            for h in headers:
+                if h and h.strip():
+                    clean_headers.append(h.strip())
+                else:
+                    break
+            data = []
+            for row in all_values[1:]:
+                if row and row[0]:
+                    data.append(dict(zip(clean_headers, row[:len(clean_headers)])))
+            return data
+    except Exception as e:
+        print(f"Sheet data fetch error ({sheet_name}): {e}")
+        return []
+
+
+def clear_sheets_cache():
+    """시트 캐시 수동 삭제"""
+    _cached_get_sheet_data.clear()
+
+
 class SheetsAPI:
     def __init__(self):
         self.scope = [
@@ -75,14 +164,13 @@ class SheetsAPI:
     # ===== Members =====
     
     def get_members(self, filters: Optional[Dict] = None) -> pd.DataFrame:
-        """성도 목록 조회"""
-        sheet = self.get_sheet('Members')
-        data = sheet.get_all_records()
+        """성도 목록 조회 (5분 캐시)"""
+        data = _cached_get_sheet_data('Members')
         df = pd.DataFrame(data)
-        
+
         if df.empty:
             return df
-        
+
         if filters:
             if filters.get('dept_id'):
                 df = df[df['dept_id'] == filters['dept_id']]
@@ -92,7 +180,7 @@ class SheetsAPI:
                 df = df[df['status'] == filters['status']]
             if filters.get('search'):
                 df = df[df['name'].str.contains(filters['search'], na=False)]
-        
+
         return df
     
     def get_member_by_id(self, member_id: str) -> Optional[Dict]:
@@ -249,51 +337,13 @@ class SheetsAPI:
     # ===== 기타 =====
     
     def get_departments(self) -> pd.DataFrame:
-        """부서 목록"""
-        sheet = self.get_sheet('_Departments')
-        try:
-            data = sheet.get_all_records()
-        except Exception:
-            # 중복 헤더 문제 발생 시 직접 파싱
-            all_values = sheet.get_all_values()
-            if len(all_values) < 2:
-                return pd.DataFrame()
-            headers = all_values[0]
-            # 빈 헤더 제거 및 중복 처리
-            clean_headers = []
-            for i, h in enumerate(headers):
-                if h and h.strip():
-                    clean_headers.append(h.strip())
-                else:
-                    break  # 빈 헤더가 나오면 중단
-            data = []
-            for row in all_values[1:]:
-                if row and row[0]:  # 첫 컬럼에 값이 있는 행만
-                    data.append(dict(zip(clean_headers, row[:len(clean_headers)])))
+        """부서 목록 (5분 캐시)"""
+        data = _cached_get_sheet_data('_Departments')
         return pd.DataFrame(data)
 
     def get_groups(self, dept_id: Optional[str] = None) -> pd.DataFrame:
-        """목장 목록"""
-        sheet = self.get_sheet('_Groups')
-        try:
-            data = sheet.get_all_records()
-        except Exception:
-            # 중복 헤더 문제 발생 시 직접 파싱
-            all_values = sheet.get_all_values()
-            if len(all_values) < 2:
-                return pd.DataFrame()
-            headers = all_values[0]
-            # 빈 헤더 제거 및 중복 처리
-            clean_headers = []
-            for i, h in enumerate(headers):
-                if h and h.strip():
-                    clean_headers.append(h.strip())
-                else:
-                    break  # 빈 헤더가 나오면 중단
-            data = []
-            for row in all_values[1:]:
-                if row and row[0]:  # 첫 컬럼에 값이 있는 행만
-                    data.append(dict(zip(clean_headers, row[:len(clean_headers)])))
+        """목장 목록 (5분 캐시)"""
+        data = _cached_get_sheet_data('_Groups')
         df = pd.DataFrame(data)
         if dept_id and not df.empty:
             df = df[df['dept_id'] == dept_id]
