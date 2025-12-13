@@ -33,7 +33,8 @@ if 'api' not in st.session_state:
         st.session_state.db_connected = True
     except Exception as e:
         st.session_state.db_connected = False
-        st.error(f"DB Error: {str(e)}")
+        # 에러 메시지를 사용자에게 표시하지 않음 (콘솔에만 로깅)
+        print(f"DB Connection Error: {str(e)}")
 
 def get_dashboard_data():
     # 캐싱: 5분 동안 데이터 재사용
@@ -43,9 +44,9 @@ def get_dashboard_data():
     import time
     now = time.time()
 
-    # 캐시가 있고 5분 이내면 캐시 반환
+    # 캐시가 있고 10분 이내면 캐시 반환 (API 할당량 초과 방지)
     if cache_key in st.session_state and cache_time_key in st.session_state:
-        if now - st.session_state[cache_time_key] < 300:  # 5분
+        if now - st.session_state[cache_time_key] < 600:  # 10분
             return st.session_state[cache_key]
 
     data = {
@@ -137,7 +138,8 @@ def get_dashboard_data():
                 data['birthdays'] = []
 
         except Exception as e:
-            st.error(f"Data Load Error: {e}")
+            # API 에러는 콘솔에만 로깅 (사용자에게 표시 안함)
+            print(f"Data Load Error: {e}")
 
     # 캐시 저장
     st.session_state[cache_key] = data
