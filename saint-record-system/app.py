@@ -275,7 +275,7 @@ with left_col:
     # HTML 참조: .card-title svg { width: 20px; height: 20px; color: var(--color-accent); }
     bar_chart_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;color:#C9A962;"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>'
     chevron_svg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>'
-    st.markdown(f'<div style="background:#FFFFFF;border-radius:24px;padding:28px;box-shadow:0 2px 20px rgba(44,62,80,0.06);height:100%;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;"><h2 style="font-size:18px;font-weight:600;color:#2C3E50;display:flex;align-items:center;gap:10px;margin:0;">{bar_chart_svg}최근 4주 출석 현황</h2><span style="font-size:13px;color:#8B7355;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;">자세히 보기 {chevron_svg}</span></div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="background:#FFFFFF;border-radius:24px;padding:28px;box-shadow:0 2px 20px rgba(44,62,80,0.06);height:100%;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;"><h2 style="font-size:18px;font-weight:600;color:#2C3E50;display:flex;align-items:center;gap:10px;margin:0;">{bar_chart_svg}최근 4주 출석 현황</h2></div>', unsafe_allow_html=True)
     
     # 차트 (Plotly 사용)
     weeks = dashboard_data.get('chart_dates', ['12/15', '12/22', '12/29', '1/5'])
@@ -401,21 +401,6 @@ with right_col:
         bday_text = ', '.join([f"{b['name']} ({b['birth_date']})" for b in birthdays[:3]])
         extra = f" 외 {len(birthdays)-3}명" if len(birthdays) > 3 else ""
         st.markdown(render_alert_item("info", "gift", "🎂 이번 주 생일", bday_text + extra), unsafe_allow_html=True)
-
-    # 빠른 실행 버튼 (2x2 그리드 - st.columns 사용)
-    st.markdown('<div style="margin-top:20px;padding-top:20px;border-top:1px solid #E8E4DF;"><div style="font-size:12px;font-weight:600;color:#6B7B8C;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">빠른 실행</div></div>', unsafe_allow_html=True)
-
-    qa_row1 = st.columns(2)
-    with qa_row1[0]:
-        st.page_link("pages/1_📋_출석입력.py", label="📋 출석 입력", use_container_width=True)
-    with qa_row1[1]:
-        st.page_link("pages/2_👤_성도관리.py", label="👤 성도 등록", use_container_width=True)
-
-    qa_row2 = st.columns(2)
-    with qa_row2[0]:
-        st.page_link("pages/2_👤_성도관리.py", label="🔍 성도 검색", use_container_width=True)
-    with qa_row2[1]:
-        st.page_link("pages/5_📊_통계.py", label="📊 통계", use_container_width=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
 

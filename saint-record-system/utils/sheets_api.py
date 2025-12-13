@@ -251,13 +251,51 @@ class SheetsAPI:
     def get_departments(self) -> pd.DataFrame:
         """부서 목록"""
         sheet = self.get_sheet('_Departments')
-        return pd.DataFrame(sheet.get_all_records())
-    
+        try:
+            data = sheet.get_all_records()
+        except Exception:
+            # 중복 헤더 문제 발생 시 직접 파싱
+            all_values = sheet.get_all_values()
+            if len(all_values) < 2:
+                return pd.DataFrame()
+            headers = all_values[0]
+            # 빈 헤더 제거 및 중복 처리
+            clean_headers = []
+            for i, h in enumerate(headers):
+                if h and h.strip():
+                    clean_headers.append(h.strip())
+                else:
+                    break  # 빈 헤더가 나오면 중단
+            data = []
+            for row in all_values[1:]:
+                if row and row[0]:  # 첫 컬럼에 값이 있는 행만
+                    data.append(dict(zip(clean_headers, row[:len(clean_headers)])))
+        return pd.DataFrame(data)
+
     def get_groups(self, dept_id: Optional[str] = None) -> pd.DataFrame:
         """목장 목록"""
         sheet = self.get_sheet('_Groups')
-        df = pd.DataFrame(sheet.get_all_records())
-        if dept_id:
+        try:
+            data = sheet.get_all_records()
+        except Exception:
+            # 중복 헤더 문제 발생 시 직접 파싱
+            all_values = sheet.get_all_values()
+            if len(all_values) < 2:
+                return pd.DataFrame()
+            headers = all_values[0]
+            # 빈 헤더 제거 및 중복 처리
+            clean_headers = []
+            for i, h in enumerate(headers):
+                if h and h.strip():
+                    clean_headers.append(h.strip())
+                else:
+                    break  # 빈 헤더가 나오면 중단
+            data = []
+            for row in all_values[1:]:
+                if row and row[0]:  # 첫 컬럼에 값이 있는 행만
+                    data.append(dict(zip(clean_headers, row[:len(clean_headers)])))
+        df = pd.DataFrame(data)
+        if dept_id and not df.empty:
             df = df[df['dept_id'] == dept_id]
         return df
     

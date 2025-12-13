@@ -145,25 +145,37 @@ def load_custom_css():
             border-radius: 3px;
         }
 
-        /* Navigation Links Styling */
+        /* Navigation Links Styling - 사이드바 메뉴 가시성 개선 */
         .stPageLink a {
-            background: transparent;
-            color: rgba(255, 255, 255, 0.65) !important;
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.9) !important;
             border-radius: 12px;
-            margin-bottom: 4px;
+            margin: 0 0.5rem 4px;
+            padding: 14px 16px !important;
             border: none;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
+            font-size: 14px !important;
+            font-weight: 500 !important;
         }
         .stPageLink a:hover {
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.12);
             color: white !important;
         }
         .stPageLink a[data-active="true"] {
             background: rgba(201, 169, 98, 0.15);
             color: white !important;
             border-left: 3px solid var(--color-accent);
+        }
+
+        /* 사이드바 전체 텍스트 가시성 개선 */
+        section[data-testid="stSidebar"] * {
+            color: rgba(255, 255, 255, 0.9) !important;
+        }
+        section[data-testid="stSidebar"] .stPageLink span {
+            color: rgba(255, 255, 255, 0.9) !important;
+            font-weight: 500 !important;
         }
 
         /* Stats Card CSS */
