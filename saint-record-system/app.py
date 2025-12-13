@@ -209,7 +209,11 @@ with col_title:
 
 with col_date:
     today_formatted = datetime.date.today().strftime("%Y년 %m월 %d일")
-    st.markdown(f'<div style="display:flex;justify-content:flex-end;gap:16px;padding-top:8px;"><div style="background:#FFFFFF;padding:12px 20px;border-radius:12px;box-shadow:0 2px 20px rgba(44,62,80,0.06);display:flex;align-items:center;gap:10px;"><span style="font-size:16px;color:#C9A962;">📅</span><span style="font-size:14px;font-weight:500;color:#2C3E50;">{today_formatted}</span></div><div style="width:48px;height:48px;background:#FFFFFF;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 20px rgba(44,62,80,0.06);position:relative;cursor:pointer;"><span style="font-size:20px;">🔔</span><div style="position:absolute;top:10px;right:10px;width:10px;height:10px;background:#E8985E;border-radius:50%;border:2px solid #FFFFFF;"></div></div></div>', unsafe_allow_html=True)
+    # HTML 참조: .date-display svg { width: 18px; height: 18px; color: var(--color-accent); }
+    # HTML 참조: .notification-btn svg { width: 20px; height: 20px; color: var(--color-text-light); }
+    calendar_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;color:#C9A962;"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>'
+    bell_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;color:#6B7B8C;"><path d="M18 8A6 6 0 106 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>'
+    st.markdown(f'<div style="display:flex;justify-content:flex-end;gap:16px;padding-top:8px;"><div style="background:#FFFFFF;padding:12px 20px;border-radius:12px;box-shadow:0 2px 20px rgba(44,62,80,0.06);display:flex;align-items:center;gap:10px;">{calendar_svg}<span style="font-size:14px;font-weight:500;color:#2C3E50;">{today_formatted}</span></div><div style="width:48px;height:48px;background:#FFFFFF;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 20px rgba(44,62,80,0.06);position:relative;cursor:pointer;">{bell_svg}<div style="position:absolute;top:10px;right:10px;width:10px;height:10px;background:#E8985E;border-radius:50%;border:2px solid #FFFFFF;"></div></div></div>', unsafe_allow_html=True)
 
 st.markdown("<div style='height: 36px;'></div>", unsafe_allow_html=True)
 
@@ -274,7 +278,10 @@ left_col, right_col = st.columns([1.5, 1])
 
 # 왼쪽: 차트 카드
 with left_col:
-    st.markdown('<div style="background:#FFFFFF;border-radius:24px;padding:28px;box-shadow:0 2px 20px rgba(44,62,80,0.06);height:100%;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;"><h2 style="font-size:18px;font-weight:600;color:#2C3E50;display:flex;align-items:center;gap:10px;margin:0;"><span style="color:#C9A962;">📊</span>최근 4주 출석 현황</h2><span style="font-size:13px;color:#8B7355;font-weight:500;cursor:pointer;">자세히 보기 ›</span></div>', unsafe_allow_html=True)
+    # HTML 참조: .card-title svg { width: 20px; height: 20px; color: var(--color-accent); }
+    bar_chart_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;color:#C9A962;"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>'
+    chevron_svg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>'
+    st.markdown(f'<div style="background:#FFFFFF;border-radius:24px;padding:28px;box-shadow:0 2px 20px rgba(44,62,80,0.06);height:100%;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;"><h2 style="font-size:18px;font-weight:600;color:#2C3E50;display:flex;align-items:center;gap:10px;margin:0;">{bar_chart_svg}최근 4주 출석 현황</h2><span style="font-size:13px;color:#8B7355;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;">자세히 보기 {chevron_svg}</span></div>', unsafe_allow_html=True)
     
     # 차트 (Plotly 사용)
     weeks = dashboard_data.get('chart_dates', ['12/15', '12/22', '12/29', '1/5'])
@@ -306,19 +313,20 @@ with left_col:
         width=0.4
     ))
 
+    # HTML 참조: .chart-container { height: 280px; }
     fig.update_layout(
         barmode='overlay',
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=0, r=0, t=0, b=0),
-        height=220,
+        margin=dict(l=0, r=0, t=10, b=30),
+        height=240,
         showlegend=False,
-        barcornerradius=4, # Plotly 5.23+
+        barcornerradius=6,
         xaxis=dict(
             showgrid=False,
             showline=False,
             showticklabels=True,
-            tickfont=dict(size=12, color='#6B7B8C')
+            tickfont=dict(size=12, color='#6B7B8C', family='Noto Sans KR')
         ),
         yaxis=dict(
             showgrid=True,
@@ -338,7 +346,8 @@ with left_col:
 
 # 오른쪽: 출석 현황 (탭 + 알림 + 빠른 실행)
 with right_col:
-    st.markdown('''<div style="background:#FFFFFF;border-radius:24px;padding:28px;box-shadow:0 2px 20px rgba(44,62,80,0.06);"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;"><h2 style="font-size:18px;font-weight:600;color:#2C3E50;display:flex;align-items:center;gap:10px;margin:0;"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;color:#4A9B7F;"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>출석 현황</h2></div>''', unsafe_allow_html=True)
+    # HTML 참조: .card-title svg { width: 20px; height: 20px; color: var(--color-accent); } where accent=#C9A962
+    st.markdown('''<div style="background:#FFFFFF;border-radius:24px;padding:28px;box-shadow:0 2px 20px rgba(44,62,80,0.06);"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;"><h2 style="font-size:18px;font-weight:600;color:#2C3E50;display:flex;align-items:center;gap:10px;margin:0;"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;color:#C9A962;"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>출석 현황</h2></div>''', unsafe_allow_html=True)
 
     # 탭 (Streamlit 네이티브 탭 사용)
     tab_dept, tab_mokjang = st.tabs(["부서별", "목장별"])
@@ -373,8 +382,8 @@ with right_col:
         else:
             st.markdown('<p style="color:#6B7B8C;font-size:14px;text-align:center;padding:20px;">데이터가 없습니다</p>', unsafe_allow_html=True)
 
-    # 알림 섹션
-    st.markdown('''<div style="margin-top:24px;padding-top:20px;border-top:1px solid #E8E4DF;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;color:#C9A962;"><path d="M18 8A6 6 0 106 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span style="font-size:15px;font-weight:600;color:#2C3E50;">알림</span></div></div>''', unsafe_allow_html=True)
+    # 알림 섹션 - HTML 참조: .card-title { font-size: 18px; } 하지만 알림 제목은 style="font-size: 15px;"
+    st.markdown('''<div style="margin-top:24px;padding-top:20px;border-top:1px solid #E8E4DF;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;color:#C9A962;"><path d="M18 8A6 6 0 106 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span style="font-size:15px;font-weight:600;color:#2C3E50;">알림</span></div></div>''', unsafe_allow_html=True)
 
     # 3주 연속 결석 알림 (실제 DB 데이터)
     absent_list = dashboard_data.get('absent_3weeks', [])

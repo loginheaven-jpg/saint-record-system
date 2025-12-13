@@ -615,7 +615,8 @@ def render_stat_card(icon_name, icon_color, value, label, trend_val, trend_dir, 
     sized_icon_svg = icon_svg.replace('<svg ', '<svg style="width:26px;height:26px;" ')
     sized_trend_svg = trend_svg.replace('<svg ', '<svg style="width:12px;height:12px;" ')
 
-    return f'''<div style="{card_bg}border-radius:20px;padding:28px;box-shadow:0 2px 20px rgba(44,62,80,0.06);position:relative;overflow:hidden;">{top_bar}<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;"><div style="width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;{icon_style}">{sized_icon_svg}</div><div style="padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px;{trend_style}">{sized_trend_svg} {trend_val}</div></div><div style="font-size:42px;font-weight:700;margin-bottom:8px;font-family:Playfair Display,serif;{value_color}line-height:1;">{value}</div><div style="font-size:14px;font-weight:500;{label_color}">{label}</div></div>'''
+    # HTML 참조: border-radius: var(--radius-md) = 16px
+    return f'''<div style="{card_bg}border-radius:16px;padding:28px;box-shadow:0 2px 20px rgba(44,62,80,0.06);position:relative;overflow:hidden;">{top_bar}<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;"><div style="width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;{icon_style}">{sized_icon_svg}</div><div style="padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px;{trend_style}">{sized_trend_svg} {trend_val}</div></div><div style="font-size:42px;font-weight:700;margin-bottom:8px;font-family:Playfair Display,serif;{value_color}line-height:1;">{value}</div><div style="font-size:14px;font-weight:500;{label_color}">{label}</div></div>'''
 
 def render_dept_item(emoji, css_class, name, current, total):
     percent = int(current / total * 100) if total > 0 else 0
@@ -649,8 +650,8 @@ def render_dept_item(emoji, css_class, name, current, total):
 
 def render_alert_item(alert_type, icon_name, title, desc):
     icon_svg = get_icon_svg(icon_name)
-    # SVG 크기 제한 추가
-    sized_svg = icon_svg.replace('<svg ', '<svg style="width:18px;height:18px;" ')
+    # SVG 크기: HTML 참조 .alert-icon svg { width: 16px; height: 16px; }
+    sized_svg = icon_svg.replace('<svg ', '<svg style="width:16px;height:16px;" ')
 
     if alert_type == "warning":
         bg_style = "background:linear-gradient(90deg,rgba(232,152,94,0.08) 0%,transparent 100%);border-left:4px solid #E8985E;"
@@ -663,8 +664,8 @@ def render_alert_item(alert_type, icon_name, title, desc):
 
 def render_quick_action(icon_name, label, href="#"):
     icon_svg = get_icon_svg(icon_name)
-    # SVG에 크기 제한 추가
-    sized_svg = icon_svg.replace('<svg ', '<svg style="width:20px;height:20px;color:#6B7B8C;" ')
+    # SVG 크기: HTML 참조 .action-btn svg { width: 22px; height: 22px; }
+    sized_svg = icon_svg.replace('<svg ', '<svg style="width:22px;height:22px;color:#8B7355;" ')
     return f'''<a href="{href}" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 12px;background:#F8F6F3;border-radius:12px;text-decoration:none;border:2px solid transparent;">{sized_svg}<span style="font-size:12px;font-weight:500;color:#2C3E50;">{label}</span></a>'''
 
 def render_chart_legend():
