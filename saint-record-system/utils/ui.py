@@ -502,22 +502,44 @@ def get_icon_svg(name):
     return ICONS.get(name, name)
 
 def render_stat_card(icon_name, icon_color, value, label, trend_val, trend_dir, is_highlight=False):
-    highlight_cls = "highlight" if is_highlight else ""
     icon_svg = get_icon_svg(icon_name)
     trend_svg = get_icon_svg('trend_' + trend_dir)
 
-    return f"""
-    <div class="stat-card {highlight_cls}">
-        <div class="stat-header">
-            <div class="stat-icon {icon_color}">{icon_svg}</div>
-            <div class="stat-trend {trend_dir}">
-                {trend_svg} {trend_val}
-            </div>
-        </div>
-        <div class="stat-value">{value}</div>
-        <div class="stat-label">{label}</div>
-    </div>
-    """
+    # Icon color backgrounds
+    icon_colors = {
+        'blue': 'background:linear-gradient(135deg,#E8F4FD 0%,#D1E9FA 100%);color:#3498db;',
+        'white': 'background:rgba(255,255,255,0.2);color:white;',
+        'green': 'background:linear-gradient(135deg,#E8F5F0 0%,#D1EBE3 100%);color:#4A9B7F;',
+        'gold': 'background:linear-gradient(135deg,#FDF8E8 0%,#F5EFD1 100%);color:#C9A962;',
+        'purple': 'background:linear-gradient(135deg,#F3E8FD 0%,#E5D1FA 100%);color:#9b59b6;',
+    }
+    icon_style = icon_colors.get(icon_color, icon_colors['blue'])
+
+    # Trend colors
+    if is_highlight:
+        trend_style = 'background:rgba(255,255,255,0.2);color:white;'
+    elif trend_dir == 'up':
+        trend_style = 'background:rgba(74,155,127,0.12);color:#4A9B7F;'
+    else:
+        trend_style = 'background:rgba(232,152,94,0.12);color:#E8985E;'
+
+    # Card styles
+    if is_highlight:
+        card_bg = 'background:linear-gradient(135deg,#2C3E50 0%,#3d5a73 100%);'
+        value_color = 'color:white;'
+        label_color = 'color:rgba(255,255,255,0.7);'
+        top_bar = '<div style="position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#C9A962,#E8D5A8);"></div>'
+    else:
+        card_bg = 'background:#FFFFFF;'
+        value_color = 'color:#2C3E50;'
+        label_color = 'color:#6B7B8C;'
+        top_bar = ''
+
+    # SVG 크기 조정
+    sized_icon_svg = icon_svg.replace('<svg ', '<svg style="width:26px;height:26px;" ')
+    sized_trend_svg = trend_svg.replace('<svg ', '<svg style="width:12px;height:12px;" ')
+
+    return f'''<div style="{card_bg}border-radius:20px;padding:28px;box-shadow:0 2px 20px rgba(44,62,80,0.06);position:relative;overflow:hidden;">{top_bar}<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;"><div style="width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;{icon_style}">{sized_icon_svg}</div><div style="padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:4px;{trend_style}">{sized_trend_svg} {trend_val}</div></div><div style="font-size:42px;font-weight:700;margin-bottom:8px;font-family:Playfair Display,serif;{value_color}line-height:1;">{value}</div><div style="font-size:14px;font-weight:500;{label_color}">{label}</div></div>'''
 
 def render_dept_item(emoji, css_class, name, current, total):
     percent = int(current / total * 100) if total > 0 else 0
@@ -551,6 +573,8 @@ def render_dept_item(emoji, css_class, name, current, total):
 
 def render_alert_item(alert_type, icon_name, title, desc):
     icon_svg = get_icon_svg(icon_name)
+    # SVG 크기 제한 추가
+    sized_svg = icon_svg.replace('<svg ', '<svg style="width:18px;height:18px;" ')
 
     if alert_type == "warning":
         bg_style = "background:linear-gradient(90deg,rgba(232,152,94,0.08) 0%,transparent 100%);border-left:4px solid #E8985E;"
@@ -559,11 +583,13 @@ def render_alert_item(alert_type, icon_name, title, desc):
         bg_style = "background:linear-gradient(90deg,rgba(201,169,98,0.08) 0%,transparent 100%);border-left:4px solid #C9A962;"
         icon_bg = "background:rgba(201,169,98,0.15);color:#C9A962;"
 
-    return f'''<div style="display:flex;align-items:flex-start;gap:14px;padding:14px;border-radius:12px;{bg_style}margin-bottom:12px;"><div style="width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;{icon_bg}">{icon_svg}</div><div style="flex:1;"><div style="font-size:13px;font-weight:600;color:#2C3E50;margin-bottom:3px;">{title}</div><div style="font-size:12px;color:#6B7B8C;line-height:1.5;">{desc}</div></div></div>'''
+    return f'''<div style="display:flex;align-items:flex-start;gap:14px;padding:14px;border-radius:12px;{bg_style}margin-bottom:12px;"><div style="width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;{icon_bg}">{sized_svg}</div><div style="flex:1;"><div style="font-size:13px;font-weight:600;color:#2C3E50;margin-bottom:3px;">{title}</div><div style="font-size:12px;color:#6B7B8C;line-height:1.5;">{desc}</div></div></div>'''
 
 def render_quick_action(icon_name, label, href="#"):
     icon_svg = get_icon_svg(icon_name)
-    return f'''<a href="{href}" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 12px;background:#F8F6F3;border-radius:12px;text-decoration:none;border:2px solid transparent;">{icon_svg}<span style="font-size:12px;font-weight:500;color:#2C3E50;">{label}</span></a>'''
+    # SVG에 크기 제한 추가
+    sized_svg = icon_svg.replace('<svg ', '<svg style="width:20px;height:20px;color:#6B7B8C;" ')
+    return f'''<a href="{href}" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 12px;background:#F8F6F3;border-radius:12px;text-decoration:none;border:2px solid transparent;">{sized_svg}<span style="font-size:12px;font-weight:500;color:#2C3E50;">{label}</span></a>'''
 
 def render_chart_legend():
     return '''<div style="display:flex;justify-content:center;gap:32px;margin-top:20px;"><div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#6B7B8C;"><div style="width:12px;height:12px;border-radius:4px;background:#C9A962;"></div><span>출석 인원</span></div><div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#6B7B8C;"><div style="width:12px;height:12px;border-radius:4px;background:#E8E4DF;"></div><span>전체 인원</span></div></div>'''

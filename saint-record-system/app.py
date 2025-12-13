@@ -4,7 +4,6 @@ import datetime
 import pandas as pd
 import plotly.graph_objects as go
 from utils.sheets_api import SheetsAPI
-import textwrap
 from utils.ui import (
     load_custom_css, render_stat_card, render_dept_item,
     render_alert_item, render_quick_action, render_chart_legend
@@ -133,255 +132,52 @@ def get_dashboard_data():
 dashboard_data = get_dashboard_data()
 
 # ============================================================
-# 4. 사이드바 렌더링
+# 4. 사이드바 렌더링 (단일 라인 HTML - Railway 호환)
 # ============================================================
 def render_sidebar():
     with st.sidebar:
         # 로고 섹션
-        st.markdown(textwrap.dedent("""
-        <div style="padding: 1.5rem 0.75rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 1.5rem;">
-            <div style="
-                width: 48px; 
-                height: 48px; 
-                background: linear-gradient(135deg, #C9A962 0%, #D4B87A 100%);
-                border-radius: 14px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin-bottom: 16px;
-                box-shadow: 0 4px 16px rgba(201, 169, 98, 0.3);
-                font-size: 24px;
-            ">⛪</div>
-            <div style="
-                font-family: 'Playfair Display', serif;
-                font-size: 22px;
-                font-weight: 600;
-                color: white;
-            ">성도기록부</div>
-            <div style="
-                font-size: 11px;
-                color: rgba(255, 255, 255, 0.5);
-                margin-top: 4px;
-                letter-spacing: 1px;
-            ">SAINT RECORD SYSTEM</div>
-        </div>
-        """), unsafe_allow_html=True)
-        
-        # 메인 네비게이션
-        st.markdown(textwrap.dedent("""
-        <div style="padding: 0 0.5rem;">
-            <div style="
-                font-size: 11px;
-                font-weight: 600;
-                color: rgba(255, 255, 255, 0.35);
-                text-transform: uppercase;
-                letter-spacing: 1.5px;
-                margin-bottom: 12px;
-            ">메인</div>
-        </div>
-        """), unsafe_allow_html=True)
-        
+        st.markdown('<div style="padding:1.5rem 0.75rem;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:1.5rem;"><div style="width:48px;height:48px;background:linear-gradient(135deg,#C9A962 0%,#D4B87A 100%);border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:0 4px 16px rgba(201,169,98,0.3);font-size:24px;">⛪</div><div style="font-family:Playfair Display,serif;font-size:22px;font-weight:600;color:white;">성도기록부</div><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:4px;letter-spacing:1px;">SAINT RECORD SYSTEM</div></div>', unsafe_allow_html=True)
+
+        # 메인 섹션 라벨
+        st.markdown('<div style="padding:0 0.5rem;"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;">메인</div></div>', unsafe_allow_html=True)
+
         # 대시보드 (활성)
-        st.markdown(textwrap.dedent("""
-        <div style="
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 14px 16px;
-            border-radius: 12px;
-            background: rgba(201, 169, 98, 0.15);
-            color: white;
-            margin: 0 0.5rem 4px;
-            position: relative;
-        ">
-            <div style="
-                position: absolute;
-                left: 0;
-                top: 0;
-                bottom: 0;
-                width: 3px;
-                background: #C9A962;
-                border-radius: 0 2px 2px 0;
-            "></div>
-            <span style="font-size: 18px;">🏠</span>
-            <span style="font-size: 14px; font-weight: 500;">대시보드</span>
-        </div>
-        """), unsafe_allow_html=True)
-        
+        st.markdown('<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;background:rgba(201,169,98,0.15);color:white;margin:0 0.5rem 4px;position:relative;"><div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#C9A962;border-radius:0 2px 2px 0;"></div><span style="font-size:18px;">🏠</span><span style="font-size:14px;font-weight:500;">대시보드</span></div>', unsafe_allow_html=True)
+
         # 출석 입력
-        st.markdown(textwrap.dedent("""
-        <div style="
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 14px 16px;
-            border-radius: 12px;
-            color: rgba(255, 255, 255, 0.65);
-            margin: 0 0.5rem 4px;
-            cursor: pointer;
-        ">
-            <span style="font-size: 18px;">📋</span>
-            <span style="font-size: 14px; font-weight: 500;">출석 입력</span>
-        </div>
-        """), unsafe_allow_html=True)
-        
-        # 관리 섹션
-        st.markdown(textwrap.dedent("""
-        <div style="padding: 0 0.5rem; margin-top: 20px;">
-            <div style="
-                font-size: 11px;
-                font-weight: 600;
-                color: rgba(255, 255, 255, 0.35);
-                text-transform: uppercase;
-                letter-spacing: 1.5px;
-                margin-bottom: 12px;
-            ">관리</div>
-        </div>
-        """), unsafe_allow_html=True)
-        
+        st.markdown('<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;color:rgba(255,255,255,0.65);margin:0 0.5rem 4px;"><span style="font-size:18px;">📋</span><span style="font-size:14px;font-weight:500;">출석 입력</span></div>', unsafe_allow_html=True)
+
+        # 관리 섹션 라벨
+        st.markdown('<div style="padding:0 0.5rem;margin-top:20px;"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;">관리</div></div>', unsafe_allow_html=True)
+
         # 성도 관리
-        st.markdown(textwrap.dedent("""
-        <div style="
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 14px 16px;
-            border-radius: 12px;
-            color: rgba(255, 255, 255, 0.65);
-            margin: 0 0.5rem 4px;
-        ">
-            <span style="font-size: 18px;">👤</span>
-            <span style="font-size: 14px; font-weight: 500;">성도 관리</span>
-        </div>
-        """), unsafe_allow_html=True)
-        
+        st.markdown('<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;color:rgba(255,255,255,0.65);margin:0 0.5rem 4px;"><span style="font-size:18px;">👤</span><span style="font-size:14px;font-weight:500;">성도 관리</span></div>', unsafe_allow_html=True)
+
         # 서브 메뉴
-        sub_menus = [("👤", "성도"), ("🏠", "가정"), ("👥", "목장"), ("📊", "부서")]
-        
-        sub_menu_html = '<div style="margin-left: 20px; padding-left: 16px; border-left: 1px solid rgba(255, 255, 255, 0.1); margin: 0 0.5rem 8px 1.75rem;">'
-        for icon, label in sub_menus:
-            sub_menu_html += f'''
-            <div style="
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                padding: 10px 14px;
-                border-radius: 12px;
-                color: rgba(255, 255, 255, 0.65);
-                margin-bottom: 4px;
-                font-size: 13px;
-            ">
-                <span style="font-size: 14px;">{icon}</span>
-                <span style="font-weight: 500;">{label}</span>
-            </div>
-            '''
+        sub_menu_html = '<div style="margin-left:20px;padding-left:16px;border-left:1px solid rgba(255,255,255,0.1);margin:0 0.5rem 8px 1.75rem;">'
+        for icon, label in [("👤", "성도"), ("🏠", "가정"), ("👥", "목장"), ("📊", "부서")]:
+            sub_menu_html += f'<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;color:rgba(255,255,255,0.65);margin-bottom:4px;font-size:13px;"><span style="font-size:14px;">{icon}</span><span style="font-weight:500;">{label}</span></div>'
         sub_menu_html += '</div>'
         st.markdown(sub_menu_html, unsafe_allow_html=True)
-        
-        # 조회 섹션
-        st.markdown(textwrap.dedent("""
-        <div style="padding: 0 0.5rem; margin-top: 20px;">
-            <div style="
-                font-size: 11px;
-                font-weight: 600;
-                color: rgba(255, 255, 255, 0.35);
-                text-transform: uppercase;
-                letter-spacing: 1.5px;
-                margin-bottom: 12px;
-            ">조회</div>
-        </div>
-        """), unsafe_allow_html=True)
-        
-        st.markdown(textwrap.dedent("""
-        <div style="
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 14px 16px;
-            border-radius: 12px;
-            color: rgba(255, 255, 255, 0.65);
-            margin: 0 0.5rem 4px;
-        ">
-            <span style="font-size: 18px;">🔍</span>
-            <span style="font-size: 14px; font-weight: 500;">검색</span>
-        </div>
-        """), unsafe_allow_html=True)
-        
-        # 분석 섹션
-        st.markdown(textwrap.dedent("""
-        <div style="padding: 0 0.5rem; margin-top: 20px;">
-            <div style="
-                font-size: 11px;
-                font-weight: 600;
-                color: rgba(255, 255, 255, 0.35);
-                text-transform: uppercase;
-                letter-spacing: 1.5px;
-                margin-bottom: 12px;
-            ">분석</div>
-        </div>
-        """), unsafe_allow_html=True)
-        
-        st.markdown(textwrap.dedent("""
-        <div style="
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 14px 16px;
-            border-radius: 12px;
-            color: rgba(255, 255, 255, 0.65);
-            margin: 0 0.5rem 4px;
-        ">
-            <span style="font-size: 18px;">📈</span>
-            <span style="font-size: 14px; font-weight: 500;">통계 / 보고서</span>
-        </div>
-        """), unsafe_allow_html=True)
-        
-        st.markdown(textwrap.dedent("""
-        <div style="
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 14px 16px;
-            border-radius: 12px;
-            color: rgba(255, 255, 255, 0.65);
-            margin: 0 0.5rem 4px;
-        ">
-            <span style="font-size: 18px;">⚙️</span>
-            <span style="font-size: 14px; font-weight: 500;">설정</span>
-        </div>
-        """), unsafe_allow_html=True)
-        
+
+        # 조회 섹션 라벨
+        st.markdown('<div style="padding:0 0.5rem;margin-top:20px;"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;">조회</div></div>', unsafe_allow_html=True)
+
+        # 검색
+        st.markdown('<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;color:rgba(255,255,255,0.65);margin:0 0.5rem 4px;"><span style="font-size:18px;">🔍</span><span style="font-size:14px;font-weight:500;">검색</span></div>', unsafe_allow_html=True)
+
+        # 분석 섹션 라벨
+        st.markdown('<div style="padding:0 0.5rem;margin-top:20px;"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;">분석</div></div>', unsafe_allow_html=True)
+
+        # 통계/보고서
+        st.markdown('<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;color:rgba(255,255,255,0.65);margin:0 0.5rem 4px;"><span style="font-size:18px;">📈</span><span style="font-size:14px;font-weight:500;">통계 / 보고서</span></div>', unsafe_allow_html=True)
+
+        # 설정
+        st.markdown('<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;color:rgba(255,255,255,0.65);margin:0 0.5rem 4px;"><span style="font-size:18px;">⚙️</span><span style="font-size:14px;font-weight:500;">설정</span></div>', unsafe_allow_html=True)
+
         # 푸터
-        st.markdown(textwrap.dedent("""
-        <div style="
-            margin-top: auto;
-            padding: 1.5rem 1rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-        ">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="
-                    width: 40px;
-                    height: 40px;
-                    border-radius: 12px;
-                    background: linear-gradient(135deg, #8B7355 0%, #C9A962 100%);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 14px;
-                    font-weight: 600;
-                    color: white;
-                ">교</div>
-                <div>
-                    <div style="font-size: 14px; font-weight: 500; color: white;">교적담당자</div>
-                    <div style="font-size: 12px; color: rgba(255, 255, 255, 0.5);">관리자</div>
-                </div>
-            </div>
-        </div>
-        """), unsafe_allow_html=True)
+        st.markdown('<div style="margin-top:auto;padding:1.5rem 1rem;border-top:1px solid rgba(255,255,255,0.1);position:absolute;bottom:0;left:0;right:0;"><div style="display:flex;align-items:center;gap:12px;"><div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#8B7355 0%,#C9A962 100%);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:white;">교</div><div><div style="font-size:14px;font-weight:500;color:white;">교적담당자</div><div style="font-size:12px;color:rgba(255,255,255,0.5);">관리자</div></div></div></div>', unsafe_allow_html=True)
 
 render_sidebar()
 
@@ -393,63 +189,11 @@ render_sidebar()
 col_title, col_date = st.columns([3, 1])
 
 with col_title:
-    st.markdown(textwrap.dedent('''
-    <h1 style="
-        font-family: 'Playfair Display', serif;
-        font-size: 32px;
-        font-weight: 600;
-        color: #2C3E50;
-        margin: 0 0 8px 0;
-    ">대시보드</h1>
-    <p style="
-        font-size: 14px;
-        color: #6B7B8C;
-        margin: 0;
-    ">예봄교회 성도 현황을 한눈에 확인하세요</p>
-    '''), unsafe_allow_html=True)
+    st.markdown('<h1 style="font-family:Playfair Display,serif;font-size:32px;font-weight:600;color:#2C3E50;margin:0 0 8px 0;">대시보드</h1><p style="font-size:14px;color:#6B7B8C;margin:0;">예봄교회 성도 현황을 한눈에 확인하세요</p>', unsafe_allow_html=True)
 
 with col_date:
     today_formatted = datetime.date.today().strftime("%Y년 %m월 %d일")
-    st.markdown(textwrap.dedent(f'''
-    <div style="display: flex; justify-content: flex-end; gap: 16px; padding-top: 8px;">
-        <div style="
-            background: #FFFFFF;
-            padding: 12px 20px;
-            border-radius: 12px;
-            box-shadow: 0 2px 20px rgba(44, 62, 80, 0.06);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        ">
-            <span style="font-size: 16px; color: #C9A962;">📅</span>
-            <span style="font-size: 14px; font-weight: 500; color: #2C3E50;">{today_formatted}</span>
-        </div>
-        <div style="
-            width: 48px;
-            height: 48px;
-            background: #FFFFFF;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 20px rgba(44, 62, 80, 0.06);
-            position: relative;
-            cursor: pointer;
-        ">
-            <span style="font-size: 20px;">🔔</span>
-            <div style="
-                position: absolute;
-                top: 10px;
-                right: 10px;
-                width: 10px;
-                height: 10px;
-                background: #E8985E;
-                border-radius: 50%;
-                border: 2px solid #FFFFFF;
-            "></div>
-        </div>
-    </div>
-    '''), unsafe_allow_html=True)
+    st.markdown(f'<div style="display:flex;justify-content:flex-end;gap:16px;padding-top:8px;"><div style="background:#FFFFFF;padding:12px 20px;border-radius:12px;box-shadow:0 2px 20px rgba(44,62,80,0.06);display:flex;align-items:center;gap:10px;"><span style="font-size:16px;color:#C9A962;">📅</span><span style="font-size:14px;font-weight:500;color:#2C3E50;">{today_formatted}</span></div><div style="width:48px;height:48px;background:#FFFFFF;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 20px rgba(44,62,80,0.06);position:relative;cursor:pointer;"><span style="font-size:20px;">🔔</span><div style="position:absolute;top:10px;right:10px;width:10px;height:10px;background:#E8985E;border-radius:50%;border:2px solid #FFFFFF;"></div></div></div>', unsafe_allow_html=True)
 
 st.markdown("<div style='height: 36px;'></div>", unsafe_allow_html=True)
 
@@ -514,30 +258,7 @@ left_col, right_col = st.columns([1.5, 1])
 
 # 왼쪽: 차트 카드
 with left_col:
-    st.markdown(textwrap.dedent('''
-    <div style="
-        background: #FFFFFF;
-        border-radius: 24px;
-        padding: 28px;
-        box-shadow: 0 2px 20px rgba(44, 62, 80, 0.06);
-        height: 100%;
-    ">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-            <h2 style="
-                font-size: 18px;
-                font-weight: 600;
-                color: #2C3E50;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                margin: 0;
-            ">
-                <span style="color: #C9A962;">📊</span>
-                최근 4주 출석 현황
-            </h2>
-            <span style="font-size: 13px; color: #8B7355; font-weight: 500; cursor: pointer;">자세히 보기 ›</span>
-        </div>
-    '''), unsafe_allow_html=True)
+    st.markdown('<div style="background:#FFFFFF;border-radius:24px;padding:28px;box-shadow:0 2px 20px rgba(44,62,80,0.06);height:100%;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;"><h2 style="font-size:18px;font-weight:600;color:#2C3E50;display:flex;align-items:center;gap:10px;margin:0;"><span style="color:#C9A962;">📊</span>최근 4주 출석 현황</h2><span style="font-size:13px;color:#8B7355;font-weight:500;cursor:pointer;">자세히 보기 ›</span></div>', unsafe_allow_html=True)
     
     # 차트 (Plotly 사용)
     weeks = dashboard_data.get('chart_dates', ['12/15', '12/22', '12/29', '1/5'])
