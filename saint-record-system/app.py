@@ -3,6 +3,7 @@ import streamlit as st
 import datetime
 import pandas as pd
 import plotly.graph_objects as go
+import time
 from utils.sheets_api import SheetsAPI
 from utils.ui import (
     load_custom_css, render_stat_card, render_dept_item,
@@ -36,19 +37,9 @@ if 'api' not in st.session_state:
         # 에러 메시지를 사용자에게 표시하지 않음 (콘솔에만 로깅)
         print(f"DB Connection Error: {str(e)}")
 
-def get_dashboard_data(force_refresh=False):
-    """대시보드 데이터 조회 (24시간 캐싱)"""
-    cache_key = 'dashboard_cache'
-    cache_time_key = 'dashboard_cache_time'
-
-    import time
-    now = time.time()
-
-    # 강제 새로고침이 아니고, 캐시가 있고 24시간 이내면 캐시 반환
-    if not force_refresh and cache_key in st.session_state and cache_time_key in st.session_state:
-        if now - st.session_state[cache_time_key] < 86400:  # 24시간
-            return st.session_state[cache_key]
-
+@st.cache_data(ttl=86400, show_spinner=False)  # 24시간 캐시
+def fetch_dashboard_data_from_api():
+    """API에서 대시보드 데이터 조회 (캐시됨)"""
     data = {
         "total_members": 0,
         "current_attend": 0,
@@ -64,88 +55,86 @@ def get_dashboard_data(force_refresh=False):
         "last_sunday": ""
     }
 
-    if st.session_state.get('db_connected'):
-        api = st.session_state.api
+    try:
+        api = SheetsAPI()
+
+        # 1. 전체 성도
+        df_members = api.get_members({'status': '재적'})
+        data['total_members'] = len(df_members)
+
+        # 2. 이번달 신규 등록
+        data['new_members'] = api.get_new_members_this_month()
+
+        # 3. 출석 데이터 (최근 4주)
+        today = pd.Timestamp.today()
+        last_sunday = today - datetime.timedelta(days=today.weekday() + 1)
+        last_sunday_str = str(last_sunday.date())
+        data['last_sunday'] = last_sunday_str
+
+        # 금주 출석
+        df_this = api.get_attendance(last_sunday.year, date=last_sunday_str)
+        if not df_this.empty:
+            data['current_attend'] = len(df_this[df_this['attend_type'].astype(str).isin(['1', '2'])])
+
+        # 전주 출석
+        prev_sunday = last_sunday - datetime.timedelta(days=7)
+        df_prev = api.get_attendance(prev_sunday.year, date=str(prev_sunday.date()))
+        if not df_prev.empty:
+            data['last_week_attend'] = len(df_prev[df_prev['attend_type'].astype(str).isin(['1', '2'])])
+
+        # 차트 데이터 (4주)
+        dates = []
+        attends = []
+        totals = []
+        for i in range(3, -1, -1):
+            d = last_sunday - datetime.timedelta(days=7*i)
+            d_str = d.strftime('%Y-%m-%d')
+            df_d = api.get_attendance(d.year, date=d_str)
+            cnt = 0
+            if not df_d.empty:
+                cnt = len(df_d[df_d['attend_type'].astype(str).isin(['1', '2'])])
+            dates.append(d.strftime('%m/%d'))
+            attends.append(cnt)
+            totals.append(data['total_members'])
+        data['chart_dates'] = dates
+        data['chart_attend'] = attends
+        data['chart_total'] = totals
+
+        # 4. 부서별 출석
+        data['dept_attendance'] = api.get_department_attendance(last_sunday_str)
+
+        # 5. 목장별 출석
+        data['mokjang_attendance'] = api.get_mokjang_attendance(last_sunday_str)
+
+        # 6. 3주 연속 결석자
         try:
-            # 1. 전체 성도
-            df_members = api.get_members({'status': '재적'})
-            data['total_members'] = len(df_members)
+            data['absent_3weeks'] = api.get_3week_absent_members()
+        except:
+            data['absent_3weeks'] = []
 
-            # 2. 이번달 신규 등록
-            data['new_members'] = api.get_new_members_this_month()
+        # 7. 이번 주 생일자
+        try:
+            data['birthdays'] = api.get_birthdays_this_week()
+        except:
+            data['birthdays'] = []
 
-            # 3. 출석 데이터 (최근 4주)
-            today = pd.Timestamp.today()
-            last_sunday = today - datetime.timedelta(days=today.weekday() + 1)
-            last_sunday_str = str(last_sunday.date())
-            data['last_sunday'] = last_sunday_str
-
-            # 금주(지난주 주일) 출석
-            df_this = api.get_attendance(last_sunday.year, date=last_sunday_str)
-            if not df_this.empty:
-                data['current_attend'] = len(df_this[df_this['attend_type'].astype(str).isin(['1', '2'])])
-
-            # 전주 출석 (트렌드 계산용)
-            prev_sunday = last_sunday - datetime.timedelta(days=7)
-            df_prev = api.get_attendance(prev_sunday.year, date=str(prev_sunday.date()))
-            if not df_prev.empty:
-                try:
-                    data['last_week_attend'] = len(df_prev[df_prev['attend_type'].astype(str).isin(['1', '2'])])
-                except KeyError:
-                    pass
-
-            # 차트 데이터 (4주)
-            dates = []
-            attends = []
-            totals = []
-
-            for i in range(3, -1, -1):
-                d = last_sunday - datetime.timedelta(days=7*i)
-                d_str = d.strftime('%Y-%m-%d')
-
-                df_d = api.get_attendance(d.year, date=d_str)
-                cnt = 0
-                if not df_d.empty:
-                    try:
-                        cnt = len(df_d[df_d['attend_type'].astype(str).isin(['1', '2'])])
-                    except KeyError:
-                        pass
-
-                dates.append(d.strftime('%m/%d'))
-                attends.append(cnt)
-                totals.append(data['total_members'])
-
-            data['chart_dates'] = dates
-            data['chart_attend'] = attends
-            data['chart_total'] = totals
-
-            # 4. 부서별 출석 현황
-            data['dept_attendance'] = api.get_department_attendance(last_sunday_str)
-
-            # 5. 목장별 출석 현황
-            data['mokjang_attendance'] = api.get_mokjang_attendance(last_sunday_str)
-
-            # 6. 3주 연속 결석자 (성능 이슈로 캐싱 권장 - 일단 구현)
-            try:
-                data['absent_3weeks'] = api.get_3week_absent_members()
-            except:
-                data['absent_3weeks'] = []
-
-            # 7. 이번 주 생일자
-            try:
-                data['birthdays'] = api.get_birthdays_this_week()
-            except:
-                data['birthdays'] = []
-
-        except Exception as e:
-            # API 에러는 콘솔에만 로깅 (사용자에게 표시 안함)
-            print(f"Data Load Error: {e}")
-
-    # 캐시 저장
-    st.session_state[cache_key] = data
-    st.session_state[cache_time_key] = now
+    except Exception as e:
+        print(f"Data Load Error: {e}")
 
     return data
+
+def get_dashboard_data(force_refresh=False):
+    """대시보드 데이터 조회 (24시간 캐싱)"""
+    if force_refresh:
+        # 캐시 강제 삭제
+        fetch_dashboard_data_from_api.clear()
+        st.session_state['dashboard_cache_time'] = time.time()
+
+    # 캐시 시간이 없으면 초기화
+    if 'dashboard_cache_time' not in st.session_state:
+        st.session_state['dashboard_cache_time'] = time.time()
+
+    return fetch_dashboard_data_from_api()
 
 # 강제 새로고침 처리
 force_refresh = st.session_state.get('force_refresh', False)
@@ -209,7 +198,6 @@ render_sidebar()
 # ============================================================
 
 # 헤더
-import time as time_module
 col_title, col_date, col_refresh = st.columns([2.5, 1, 0.5])
 
 with col_title:
@@ -225,7 +213,7 @@ with col_refresh:
     # 캐시 시간 표시
     cache_time = st.session_state.get('dashboard_cache_time', 0)
     if cache_time > 0:
-        cache_age_min = int((time_module.time() - cache_time) / 60)
+        cache_age_min = int((time.time() - cache_time) / 60)
         if cache_age_min < 60:
             cache_info = f"{cache_age_min}분 전"
         else:
@@ -316,32 +304,39 @@ with left_col:
         total_data = [0,0,0,0]
 
     fig = go.Figure()
-    
-    # 배경 bar (전체 인원)
-    fig.add_trace(go.Bar(
-        x=weeks,
-        y=total_data,
-        name='전체',
-        marker_color='#F5EFE0',
-        hoverinfo='none'
-    ))
-    
-    # 출석 bar
+
+    # 출석 bar (왼쪽, 골드색)
     fig.add_trace(go.Bar(
         x=weeks,
         y=attendance_data,
-        name='출석',
+        name='출석 인원',
         marker_color='#C9A962',
-        width=0.4
+        marker_line_width=0,
+        width=0.35,
+        text=attendance_data,
+        textposition='outside',
+        textfont=dict(size=11, color='#6B7B8C')
     ))
 
-    # HTML 참조: .chart-container { height: 280px; }
+    # 전체 인원 bar (오른쪽, 회색)
+    fig.add_trace(go.Bar(
+        x=weeks,
+        y=total_data,
+        name='전체 인원',
+        marker_color='#E8E4DF',
+        marker_line_width=0,
+        width=0.35
+    ))
+
+    # HTML 참조처럼 나란히 배치
     fig.update_layout(
-        barmode='overlay',
+        barmode='group',
+        bargap=0.3,
+        bargroupgap=0.1,
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=0, r=0, t=10, b=30),
-        height=240,
+        margin=dict(l=0, r=0, t=30, b=30),
+        height=260,
         showlegend=False,
         barcornerradius=6,
         xaxis=dict(
