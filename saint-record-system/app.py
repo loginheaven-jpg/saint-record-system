@@ -36,17 +36,17 @@ if 'api' not in st.session_state:
         # 에러 메시지를 사용자에게 표시하지 않음 (콘솔에만 로깅)
         print(f"DB Connection Error: {str(e)}")
 
-def get_dashboard_data():
-    # 캐싱: 5분 동안 데이터 재사용
+def get_dashboard_data(force_refresh=False):
+    """대시보드 데이터 조회 (24시간 캐싱)"""
     cache_key = 'dashboard_cache'
     cache_time_key = 'dashboard_cache_time'
 
     import time
     now = time.time()
 
-    # 캐시가 있고 10분 이내면 캐시 반환 (API 할당량 초과 방지)
-    if cache_key in st.session_state and cache_time_key in st.session_state:
-        if now - st.session_state[cache_time_key] < 600:  # 10분
+    # 강제 새로고침이 아니고, 캐시가 있고 24시간 이내면 캐시 반환
+    if not force_refresh and cache_key in st.session_state and cache_time_key in st.session_state:
+        if now - st.session_state[cache_time_key] < 86400:  # 24시간
             return st.session_state[cache_key]
 
     data = {
@@ -147,7 +147,12 @@ def get_dashboard_data():
 
     return data
 
-dashboard_data = get_dashboard_data()
+# 강제 새로고침 처리
+force_refresh = st.session_state.get('force_refresh', False)
+if force_refresh:
+    st.session_state['force_refresh'] = False
+
+dashboard_data = get_dashboard_data(force_refresh=force_refresh)
 
 # ============================================================
 # 4. 사이드바 렌더링 (단일 라인 HTML - Railway 호환)
@@ -212,10 +217,29 @@ with col_title:
 with col_date:
     today_formatted = datetime.date.today().strftime("%Y년 %m월 %d일")
     # HTML 참조: .date-display svg { width: 18px; height: 18px; color: var(--color-accent); }
-    # HTML 참조: .notification-btn svg { width: 20px; height: 20px; color: var(--color-text-light); }
     calendar_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;color:#C9A962;"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>'
     bell_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;color:#6B7B8C;"><path d="M18 8A6 6 0 106 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>'
-    st.markdown(f'<div style="display:flex;justify-content:flex-end;gap:16px;padding-top:8px;"><div style="background:#FFFFFF;padding:12px 20px;border-radius:12px;box-shadow:0 2px 20px rgba(44,62,80,0.06);display:flex;align-items:center;gap:10px;">{calendar_svg}<span style="font-size:14px;font-weight:500;color:#2C3E50;">{today_formatted}</span></div><div style="width:48px;height:48px;background:#FFFFFF;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 20px rgba(44,62,80,0.06);position:relative;cursor:pointer;">{bell_svg}<div style="position:absolute;top:10px;right:10px;width:10px;height:10px;background:#E8985E;border-radius:50%;border:2px solid #FFFFFF;"></div></div></div>', unsafe_allow_html=True)
+
+    # 캐시 시간 표시 계산
+    import time
+    cache_time = st.session_state.get('dashboard_cache_time', 0)
+    if cache_time > 0:
+        cache_age_min = int((time.time() - cache_time) / 60)
+        if cache_age_min < 60:
+            cache_info = f"{cache_age_min}분 전 갱신"
+        else:
+            cache_info = f"{cache_age_min // 60}시간 전 갱신"
+    else:
+        cache_info = "새 데이터"
+
+    date_col, refresh_col = st.columns([3, 1])
+    with date_col:
+        st.markdown(f'<div style="display:flex;justify-content:flex-end;gap:12px;padding-top:8px;"><div style="background:#FFFFFF;padding:12px 20px;border-radius:12px;box-shadow:0 2px 20px rgba(44,62,80,0.06);display:flex;align-items:center;gap:10px;">{calendar_svg}<span style="font-size:14px;font-weight:500;color:#2C3E50;">{today_formatted}</span></div><div style="width:48px;height:48px;background:#FFFFFF;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 20px rgba(44,62,80,0.06);position:relative;cursor:pointer;">{bell_svg}<div style="position:absolute;top:10px;right:10px;width:10px;height:10px;background:#E8985E;border-radius:50%;border:2px solid #FFFFFF;"></div></div></div>', unsafe_allow_html=True)
+    with refresh_col:
+        st.markdown(f'<p style="font-size:11px;color:#6B7B8C;text-align:right;margin:12px 0 4px 0;">{cache_info}</p>', unsafe_allow_html=True)
+        if st.button("🔄 새로고침", key="refresh_btn", use_container_width=True):
+            st.session_state['force_refresh'] = True
+            st.rerun()
 
 st.markdown("<div style='height: 36px;'></div>", unsafe_allow_html=True)
 
