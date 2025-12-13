@@ -7,7 +7,7 @@ import time
 from utils.sheets_api import SheetsAPI
 from utils.ui import (
     load_custom_css, render_stat_card, render_dept_item,
-    render_alert_item, render_quick_action, render_chart_legend
+    render_alert_item, render_chart_legend
 )
 
 # ============================================================
@@ -144,7 +144,7 @@ if force_refresh:
 dashboard_data = get_dashboard_data(force_refresh=force_refresh)
 
 # ============================================================
-# 4. 사이드바 렌더링 (단일 라인 HTML - Railway 호환)
+# 4. 사이드바 렌더링 (Streamlit 네이티브 네비게이션 사용)
 # ============================================================
 def render_sidebar():
     with st.sidebar:
@@ -154,42 +154,26 @@ def render_sidebar():
         # 메인 섹션 라벨
         st.markdown('<div style="padding:0 0.5rem;"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;">메인</div></div>', unsafe_allow_html=True)
 
-        # 대시보드 (활성)
+        # 대시보드 (활성) - 현재 페이지이므로 스타일링만
         st.markdown('<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;background:rgba(201,169,98,0.15);color:white;margin:0 0.5rem 4px;position:relative;"><div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#C9A962;border-radius:0 2px 2px 0;"></div><span style="font-size:18px;">🏠</span><span style="font-size:14px;font-weight:500;">대시보드</span></div>', unsafe_allow_html=True)
 
-        # 출석 입력
-        st.markdown('<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;color:rgba(255,255,255,0.65);margin:0 0.5rem 4px;"><span style="font-size:18px;">📋</span><span style="font-size:14px;font-weight:500;">출석 입력</span></div>', unsafe_allow_html=True)
+        # 출석 입력 - 실제 네비게이션 링크
+        st.page_link("pages/1_📋_출석입력.py", label="📋 출석 입력")
 
         # 관리 섹션 라벨
         st.markdown('<div style="padding:0 0.5rem;margin-top:20px;"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;">관리</div></div>', unsafe_allow_html=True)
 
-        # 성도 관리
-        st.markdown('<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;color:rgba(255,255,255,0.65);margin:0 0.5rem 4px;"><span style="font-size:18px;">👤</span><span style="font-size:14px;font-weight:500;">성도 관리</span></div>', unsafe_allow_html=True)
-
-        # 서브 메뉴
-        sub_menu_html = '<div style="margin-left:20px;padding-left:16px;border-left:1px solid rgba(255,255,255,0.1);margin:0 0.5rem 8px 1.75rem;">'
-        for icon, label in [("👤", "성도"), ("🏠", "가정"), ("👥", "목장"), ("📊", "부서")]:
-            sub_menu_html += f'<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:12px;color:rgba(255,255,255,0.65);margin-bottom:4px;font-size:13px;"><span style="font-size:14px;">{icon}</span><span style="font-weight:500;">{label}</span></div>'
-        sub_menu_html += '</div>'
-        st.markdown(sub_menu_html, unsafe_allow_html=True)
-
-        # 조회 섹션 라벨
-        st.markdown('<div style="padding:0 0.5rem;margin-top:20px;"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;">조회</div></div>', unsafe_allow_html=True)
-
-        # 검색
-        st.markdown('<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;color:rgba(255,255,255,0.65);margin:0 0.5rem 4px;"><span style="font-size:18px;">🔍</span><span style="font-size:14px;font-weight:500;">검색</span></div>', unsafe_allow_html=True)
+        # 성도 관리 - 실제 네비게이션 링크
+        st.page_link("pages/2_👤_성도관리.py", label="👤 성도 관리")
 
         # 분석 섹션 라벨
         st.markdown('<div style="padding:0 0.5rem;margin-top:20px;"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;">분석</div></div>', unsafe_allow_html=True)
 
-        # 통계/보고서
-        st.markdown('<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;color:rgba(255,255,255,0.65);margin:0 0.5rem 4px;"><span style="font-size:18px;">📈</span><span style="font-size:14px;font-weight:500;">통계 / 보고서</span></div>', unsafe_allow_html=True)
-
-        # 설정
-        st.markdown('<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;color:rgba(255,255,255,0.65);margin:0 0.5rem 4px;"><span style="font-size:18px;">⚙️</span><span style="font-size:14px;font-weight:500;">설정</span></div>', unsafe_allow_html=True)
+        # 통계 페이지
+        st.page_link("pages/5_📊_통계.py", label="📊 출석 통계")
 
         # 푸터
-        st.markdown('<div style="margin-top:auto;padding:1.5rem 1rem;border-top:1px solid rgba(255,255,255,0.1);position:absolute;bottom:0;left:0;right:0;"><div style="display:flex;align-items:center;gap:12px;"><div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#8B7355 0%,#C9A962 100%);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:white;">교</div><div><div style="font-size:14px;font-weight:500;color:white;">교적담당자</div><div style="font-size:12px;color:rgba(255,255,255,0.5);">관리자</div></div></div></div>', unsafe_allow_html=True)
+        st.markdown('<div style="margin-top:auto;padding:1.5rem 1rem;border-top:1px solid rgba(255,255,255,0.1);"><div style="display:flex;align-items:center;gap:12px;"><div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#8B7355 0%,#C9A962 100%);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:white;">교</div><div><div style="font-size:14px;font-weight:500;color:white;">교적담당자</div><div style="font-size:12px;color:rgba(255,255,255,0.5);">관리자</div></div></div></div>', unsafe_allow_html=True)
 
 render_sidebar()
 
@@ -419,21 +403,19 @@ with right_col:
         st.markdown(render_alert_item("info", "gift", "🎂 이번 주 생일", bday_text + extra), unsafe_allow_html=True)
 
     # 빠른 실행 버튼 (2x2 그리드 - st.columns 사용)
-    st.markdown('<div style="margin-top:20px;padding-top:20px;border-top:1px solid #E8E4DF;"><div style="font-size:12px;font-weight:600;color:#6B7B8C;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">빠른 실행</div>', unsafe_allow_html=True)
+    st.markdown('<div style="margin-top:20px;padding-top:20px;border-top:1px solid #E8E4DF;"><div style="font-size:12px;font-weight:600;color:#6B7B8C;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">빠른 실행</div></div>', unsafe_allow_html=True)
 
     qa_row1 = st.columns(2)
     with qa_row1[0]:
-        st.markdown(render_quick_action("clipboard", "출석 입력", "/1_📋_출석입력"), unsafe_allow_html=True)
+        st.page_link("pages/1_📋_출석입력.py", label="📋 출석 입력", use_container_width=True)
     with qa_row1[1]:
-        st.markdown(render_quick_action("user-plus", "성도 등록", "/2_👤_성도관리"), unsafe_allow_html=True)
+        st.page_link("pages/2_👤_성도관리.py", label="👤 성도 등록", use_container_width=True)
 
     qa_row2 = st.columns(2)
     with qa_row2[0]:
-        st.markdown(render_quick_action("search", "성도 검색", "/4_🔍_검색"), unsafe_allow_html=True)
+        st.page_link("pages/2_👤_성도관리.py", label="🔍 성도 검색", use_container_width=True)
     with qa_row2[1]:
-        st.markdown(render_quick_action("file", "보고서", "/5_📊_통계"), unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.page_link("pages/5_📊_통계.py", label="📊 통계", use_container_width=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
 

@@ -275,13 +275,19 @@ class SheetsAPI:
         Returns: [{'dept_id': '1', 'name': '장년부', 'emoji': '👨‍👩‍👧', 'css_class': 'adults',
                    'total': 108, 'present': 85, 'rate': 78.7}, ...]
         """
-        # 부서 매핑
-        dept_mapping = {
-            '1': {'name': '장년부', 'emoji': '👨‍👩‍👧', 'css_class': 'adults'},
-            '2': {'name': '청년부', 'emoji': '🎓', 'css_class': 'youth'},
-            '3': {'name': '청소년부', 'emoji': '🎒', 'css_class': 'teens'},
-            '4': {'name': '어린이부', 'emoji': '🧒', 'css_class': 'children'},
+        # 이모지/CSS 클래스 매핑 (부서명 기반)
+        style_mapping = {
+            '장년부': {'emoji': '👨‍👩‍👧', 'css_class': 'adults'},
+            '청년부': {'emoji': '🎓', 'css_class': 'youth'},
+            '청소년부': {'emoji': '🎒', 'css_class': 'teens'},
+            '어린이부': {'emoji': '🧒', 'css_class': 'children'},
         }
+        default_style = {'emoji': '👥', 'css_class': 'default'}
+
+        # 부서 목록 조회 (DB에서)
+        departments = self.get_departments()
+        if departments.empty:
+            return []
 
         # 재적 성도 조회
         members = self.get_members({'status': '재적'})
@@ -293,7 +299,14 @@ class SheetsAPI:
         attendance = self.get_attendance(year, date=date)
 
         results = []
-        for dept_id, info in dept_mapping.items():
+        for _, dept in departments.iterrows():
+            dept_id = str(dept.get('dept_id', ''))
+            dept_name = dept.get('dept_name', '')
+
+            if not dept_id:
+                continue
+
+            # 해당 부서 성도 필터
             dept_members = members[members['dept_id'].astype(str) == dept_id]
             total = len(dept_members)
 
@@ -311,11 +324,14 @@ class SheetsAPI:
             else:
                 present = 0
 
+            # 스타일 매핑
+            style = style_mapping.get(dept_name, default_style)
+
             results.append({
                 'dept_id': dept_id,
-                'name': info['name'],
-                'emoji': info['emoji'],
-                'css_class': info['css_class'],
+                'name': dept_name,
+                'emoji': style['emoji'],
+                'css_class': style['css_class'],
                 'total': total,
                 'present': present,
                 'rate': round((present / total) * 100, 1) if total > 0 else 0
@@ -329,17 +345,23 @@ class SheetsAPI:
         Returns: [{'group_id': '1', 'name': '네팔 목장', 'emoji': '🇳🇵', 'css_class': 'nepal',
                    'total': 12, 'present': 11, 'rate': 91.7}, ...]
         """
-        # 목장 매핑
-        mokjang_mapping = {
-            '1': {'name': '네팔 목장', 'emoji': '🇳🇵', 'css_class': 'nepal'},
-            '2': {'name': '러시아 목장', 'emoji': '🇷🇺', 'css_class': 'russia'},
-            '3': {'name': '필리핀 목장', 'emoji': '🇵🇭', 'css_class': 'philippines'},
-            '4': {'name': '태국 목장', 'emoji': '🇹🇭', 'css_class': 'thailand'},
-            '5': {'name': '베냉 목장', 'emoji': '🇧🇯', 'css_class': 'benin'},
-            '6': {'name': '콩고 목장', 'emoji': '🇨🇩', 'css_class': 'congo'},
-            '7': {'name': '칠레 목장', 'emoji': '🇨🇱', 'css_class': 'chile'},
-            '8': {'name': '철원 목장', 'emoji': '🏔️', 'css_class': 'cheorwon'},
+        # 이모지/CSS 클래스 매핑 (목장명 기반)
+        style_mapping = {
+            '네팔 목장': {'emoji': '🇳🇵', 'css_class': 'nepal'},
+            '러시아 목장': {'emoji': '🇷🇺', 'css_class': 'russia'},
+            '필리핀 목장': {'emoji': '🇵🇭', 'css_class': 'philippines'},
+            '태국 목장': {'emoji': '🇹🇭', 'css_class': 'thailand'},
+            '베냉 목장': {'emoji': '🇧🇯', 'css_class': 'benin'},
+            '콩고 목장': {'emoji': '🇨🇩', 'css_class': 'congo'},
+            '칠레 목장': {'emoji': '🇨🇱', 'css_class': 'chile'},
+            '철원 목장': {'emoji': '🏔️', 'css_class': 'cheorwon'},
         }
+        default_style = {'emoji': '🏠', 'css_class': 'default'}
+
+        # 목장 목록 조회 (DB에서)
+        groups = self.get_groups()
+        if groups.empty:
+            return []
 
         # 재적 성도 조회
         members = self.get_members({'status': '재적'})
@@ -351,7 +373,14 @@ class SheetsAPI:
         attendance = self.get_attendance(year, date=date)
 
         results = []
-        for group_id, info in mokjang_mapping.items():
+        for _, group in groups.iterrows():
+            group_id = str(group.get('group_id', ''))
+            group_name = group.get('group_name', '')
+
+            if not group_id:
+                continue
+
+            # 해당 목장 성도 필터
             group_members = members[members['group_id'].astype(str) == group_id]
             total = len(group_members)
 
@@ -369,11 +398,14 @@ class SheetsAPI:
             else:
                 present = 0
 
+            # 스타일 매핑
+            style = style_mapping.get(group_name, default_style)
+
             results.append({
                 'group_id': group_id,
-                'name': info['name'],
-                'emoji': info['emoji'],
-                'css_class': info['css_class'],
+                'name': group_name,
+                'emoji': style['emoji'],
+                'css_class': style['css_class'],
                 'total': total,
                 'present': present,
                 'rate': round((present / total) * 100, 1) if total > 0 else 0
