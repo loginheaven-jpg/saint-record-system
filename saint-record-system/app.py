@@ -209,37 +209,33 @@ render_sidebar()
 # ============================================================
 
 # 헤더
-col_title, col_date = st.columns([3, 1])
+import time as time_module
+col_title, col_date, col_refresh = st.columns([2.5, 1, 0.5])
 
 with col_title:
     st.markdown('<h1 style="font-family:Playfair Display,serif;font-size:32px;font-weight:600;color:#2C3E50;margin:0 0 8px 0;">대시보드</h1><p style="font-size:14px;color:#6B7B8C;margin:0;">예봄교회 성도 현황을 한눈에 확인하세요</p>', unsafe_allow_html=True)
 
 with col_date:
     today_formatted = datetime.date.today().strftime("%Y년 %m월 %d일")
-    # HTML 참조: .date-display svg { width: 18px; height: 18px; color: var(--color-accent); }
     calendar_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;color:#C9A962;"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>'
     bell_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;color:#6B7B8C;"><path d="M18 8A6 6 0 106 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>'
+    st.markdown(f'<div style="display:flex;justify-content:flex-end;gap:12px;padding-top:8px;"><div style="background:#FFFFFF;padding:12px 20px;border-radius:12px;box-shadow:0 2px 20px rgba(44,62,80,0.06);display:flex;align-items:center;gap:10px;">{calendar_svg}<span style="font-size:14px;font-weight:500;color:#2C3E50;">{today_formatted}</span></div><div style="width:48px;height:48px;background:#FFFFFF;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 20px rgba(44,62,80,0.06);position:relative;cursor:pointer;">{bell_svg}<div style="position:absolute;top:10px;right:10px;width:10px;height:10px;background:#E8985E;border-radius:50%;border:2px solid #FFFFFF;"></div></div></div>', unsafe_allow_html=True)
 
-    # 캐시 시간 표시 계산
-    import time
+with col_refresh:
+    # 캐시 시간 표시
     cache_time = st.session_state.get('dashboard_cache_time', 0)
     if cache_time > 0:
-        cache_age_min = int((time.time() - cache_time) / 60)
+        cache_age_min = int((time_module.time() - cache_time) / 60)
         if cache_age_min < 60:
-            cache_info = f"{cache_age_min}분 전 갱신"
+            cache_info = f"{cache_age_min}분 전"
         else:
-            cache_info = f"{cache_age_min // 60}시간 전 갱신"
+            cache_info = f"{cache_age_min // 60}시간 전"
     else:
         cache_info = "새 데이터"
-
-    date_col, refresh_col = st.columns([3, 1])
-    with date_col:
-        st.markdown(f'<div style="display:flex;justify-content:flex-end;gap:12px;padding-top:8px;"><div style="background:#FFFFFF;padding:12px 20px;border-radius:12px;box-shadow:0 2px 20px rgba(44,62,80,0.06);display:flex;align-items:center;gap:10px;">{calendar_svg}<span style="font-size:14px;font-weight:500;color:#2C3E50;">{today_formatted}</span></div><div style="width:48px;height:48px;background:#FFFFFF;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 20px rgba(44,62,80,0.06);position:relative;cursor:pointer;">{bell_svg}<div style="position:absolute;top:10px;right:10px;width:10px;height:10px;background:#E8985E;border-radius:50%;border:2px solid #FFFFFF;"></div></div></div>', unsafe_allow_html=True)
-    with refresh_col:
-        st.markdown(f'<p style="font-size:11px;color:#6B7B8C;text-align:right;margin:12px 0 4px 0;">{cache_info}</p>', unsafe_allow_html=True)
-        if st.button("🔄 새로고침", key="refresh_btn", use_container_width=True):
-            st.session_state['force_refresh'] = True
-            st.rerun()
+    st.markdown(f'<p style="font-size:10px;color:#6B7B8C;text-align:center;margin:8px 0 4px 0;">{cache_info}</p>', unsafe_allow_html=True)
+    if st.button("🔄", key="refresh_btn", help="데이터 새로고침"):
+        st.session_state['force_refresh'] = True
+        st.rerun()
 
 st.markdown("<div style='height: 36px;'></div>", unsafe_allow_html=True)
 
