@@ -128,13 +128,17 @@ def fetch_dashboard_data_from_api():
         # 8. 8주 부서별 출석 (스택 바 차트용)
         try:
             data['stacked_chart_data'] = api.get_8week_dept_attendance()
-        except:
+            print(f"[DEBUG] stacked_chart_data loaded: {len(data['stacked_chart_data'])} weeks")
+        except Exception as e:
+            print(f"[ERROR] get_8week_dept_attendance failed: {e}")
             data['stacked_chart_data'] = []
 
         # 9. 부서별 통계 (부서 카드용)
         try:
             data['dept_stats'] = api.get_dept_stats()
-        except:
+            print(f"[DEBUG] dept_stats loaded: {len(data['dept_stats'])} departments")
+        except Exception as e:
+            print(f"[ERROR] get_dept_stats failed: {e}")
             data['dept_stats'] = []
 
         # 10. 부서별 8주 트렌드 (팝오버 미니차트용)
@@ -145,7 +149,9 @@ def fetch_dashboard_data_from_api():
                 if dept_id:
                     dept_trends[dept_id] = api.get_dept_attendance_trend(dept_id)
             data['dept_trends'] = dept_trends
-        except:
+            print(f"[DEBUG] dept_trends loaded: {len(dept_trends)} departments")
+        except Exception as e:
+            print(f"[ERROR] get_dept_attendance_trend failed: {e}")
             data['dept_trends'] = {}
 
     except Exception as e:
@@ -166,6 +172,14 @@ def get_dashboard_data(force_refresh=False):
 
     return fetch_dashboard_data_from_api()
 
+# 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
+APP_VERSION = "v3.0"  # 버전 변경 시 캐시 자동 클리어
+if st.session_state.get('app_version') != APP_VERSION:
+    st.session_state['app_version'] = APP_VERSION
+    st.session_state['dashboard_data_loaded'] = False
+    fetch_dashboard_data_from_api.clear()
+    print(f"[INFO] App version updated to {APP_VERSION}, cache cleared.")
+
 # 강제 새로고침 처리
 force_refresh = st.session_state.get('force_refresh', False)
 if force_refresh:
@@ -174,7 +188,7 @@ if force_refresh:
 # 로딩 표시 (데이터 로드 중)
 if 'dashboard_data_loaded' not in st.session_state:
     with st.spinner("📊 데이터를 불러오는 중..."):
-        dashboard_data = get_dashboard_data(force_refresh=force_refresh)
+        dashboard_data = get_dashboard_data(force_refresh=True)  # 첫 로드는 항상 새로고침
         st.session_state['dashboard_data_loaded'] = True
 else:
     dashboard_data = get_dashboard_data(force_refresh=force_refresh)
