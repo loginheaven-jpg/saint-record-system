@@ -614,3 +614,251 @@ class SheetsAPI:
                 continue
 
         return birthdays
+
+    # ============================================================
+    # 새 API 메서드 (dashboard_v3.html 기반 UI용)
+    # ============================================================
+
+    def get_8week_dept_attendance(self) -> List[Dict]:
+        """
+        8주간 부서별 출석 데이터 (스택 바 차트용)
+        Returns: [
+            {"week": "1월 5일", "adults": 89, "youth": 52, "teens": 18, "children": 34},
+            ...
+        ]
+        """
+        now = pd.Timestamp.now()
+        # 지난 일요일 계산
+        days_since_sunday = (now.weekday() + 1) % 7
+        last_sunday = now - pd.Timedelta(days=days_since_sunday)
+
+        # 부서 ID → CSS 클래스 매핑
+        dept_name_to_key = {
+            '장년부': 'adults',
+            '청년부': 'youth',
+            '청소년부': 'teens',
+            '어린이부': 'children'
+        }
+
+        # 부서 목록 조회
+        departments = self.get_departments()
+        if departments.empty:
+            return []
+
+        # 재적 성도 조회
+        members = self.get_members({'status': '재적'})
+        if members.empty:
+            return []
+
+        results = []
+
+        # 8주 역순 (오래된 것부터)
+        for i in range(7, -1, -1):
+            sunday = last_sunday - pd.Timedelta(weeks=i)
+            sunday_str = sunday.strftime('%Y-%m-%d')
+            week_label = sunday.strftime('%m월 %d일').replace(' 0', ' ').lstrip('0')
+
+            year = int(sunday_str[:4])
+            attendance = self.get_attendance(year, date=sunday_str)
+
+            week_data = {'week': week_label, 'adults': 0, 'youth': 0, 'teens': 0, 'children': 0}
+
+            for _, dept in departments.iterrows():
+                dept_id = str(dept.get('dept_id', ''))
+                dept_name = dept.get('dept_name', '')
+                dept_key = dept_name_to_key.get(dept_name)
+
+                if not dept_key:
+                    continue
+
+                # 해당 부서 성도 필터
+                dept_members = members[members['dept_id'].astype(str) == dept_id]
+                member_ids = dept_members['member_id'].tolist()
+
+                # 출석자 수
+                if not attendance.empty and member_ids:
+                    dept_attendance = attendance[attendance['member_id'].isin(member_ids)]
+                    present = len(dept_attendance[
+                        dept_attendance['attend_type'].astype(str).isin(['1', '2'])
+                    ])
+                else:
+                    present = 0
+
+                week_data[dept_key] = present
+
+            results.append(week_data)
+
+        return results
+
+    def get_dept_stats(self) -> List[Dict]:
+        """
+        부서별 통계 (부서 카드용)
+        Returns: [
+            {
+                "dept_id": "1",
+                "name": "장년부",
+                "emoji": "👴",
+                "css_class": "adults",
+                "groups_count": 12,
+                "members_count": 89,
+                "attendance_rate": 78
+            },
+            ...
+        ]
+        """
+        # 스타일 매핑
+        style_mapping = {
+            '장년부': {'emoji': '👴', 'css_class': 'adults'},
+            '청년부': {'emoji': '👨', 'css_class': 'youth'},
+            '청소년부': {'emoji': '👦', 'css_class': 'teens'},
+            '어린이부': {'emoji': '👧', 'css_class': 'children'},
+        }
+        default_style = {'emoji': '👥', 'css_class': 'default'}
+
+        # 부서 목록
+        departments = self.get_departments()
+        if departments.empty:
+            return []
+
+        # 목장 목록
+        groups = self.get_groups()
+
+        # 재적 성도
+        members = self.get_members({'status': '재적'})
+
+        # 최근 일요일
+        now = pd.Timestamp.now()
+        days_since_sunday = (now.weekday() + 1) % 7
+        last_sunday = now - pd.Timedelta(days=days_since_sunday)
+        last_sunday_str = last_sunday.strftime('%Y-%m-%d')
+
+        year = int(last_sunday_str[:4])
+        attendance = self.get_attendance(year, date=last_sunday_str)
+
+        results = []
+
+        for _, dept in departments.iterrows():
+            dept_id = str(dept.get('dept_id', ''))
+            dept_name = dept.get('dept_name', '')
+
+            if not dept_id:
+                continue
+
+            # 스타일
+            style = style_mapping.get(dept_name, default_style)
+
+            # 목장 수
+            if not groups.empty:
+                dept_groups = groups[groups['dept_id'].astype(str) == dept_id]
+                groups_count = len(dept_groups)
+            else:
+                groups_count = 0
+
+            # 성도 수
+            if not members.empty:
+                dept_members = members[members['dept_id'].astype(str) == dept_id]
+                members_count = len(dept_members)
+                member_ids = dept_members['member_id'].tolist()
+            else:
+                members_count = 0
+                member_ids = []
+
+            # 출석률
+            if members_count > 0 and not attendance.empty and member_ids:
+                dept_attendance = attendance[attendance['member_id'].isin(member_ids)]
+                present = len(dept_attendance[
+                    dept_attendance['attend_type'].astype(str).isin(['1', '2'])
+                ])
+                attendance_rate = int((present / members_count) * 100)
+            else:
+                attendance_rate = 0
+
+            results.append({
+                'dept_id': dept_id,
+                'name': dept_name,
+                'emoji': style['emoji'],
+                'css_class': style['css_class'],
+                'groups_count': groups_count,
+                'members_count': members_count,
+                'attendance_rate': attendance_rate
+            })
+
+        return results
+
+    def get_dept_attendance_trend(self, dept_id: str) -> List[int]:
+        """
+        부서별 8주 출석률 트렌드 (팝오버 미니차트용)
+        Returns: [80, 82, 76, 79, 81, 78, 80, 83]  # 8주 출석률 %
+        """
+        now = pd.Timestamp.now()
+        days_since_sunday = (now.weekday() + 1) % 7
+        last_sunday = now - pd.Timedelta(days=days_since_sunday)
+
+        # 재적 성도
+        members = self.get_members({'status': '재적'})
+        if members.empty:
+            return [0] * 8
+
+        # 해당 부서 성도
+        dept_members = members[members['dept_id'].astype(str) == str(dept_id)]
+        total = len(dept_members)
+        if total == 0:
+            return [0] * 8
+
+        member_ids = dept_members['member_id'].tolist()
+
+        results = []
+
+        for i in range(7, -1, -1):
+            sunday = last_sunday - pd.Timedelta(weeks=i)
+            sunday_str = sunday.strftime('%Y-%m-%d')
+            year = int(sunday_str[:4])
+
+            attendance = self.get_attendance(year, date=sunday_str)
+
+            if not attendance.empty:
+                dept_attendance = attendance[attendance['member_id'].isin(member_ids)]
+                present = len(dept_attendance[
+                    dept_attendance['attend_type'].astype(str).isin(['1', '2'])
+                ])
+                rate = int((present / total) * 100)
+            else:
+                rate = 0
+
+            results.append(rate)
+
+        return results
+
+    def get_groups_by_dept(self, dept_id: str) -> List[Dict]:
+        """
+        부서별 목장 목록 (목장 그리드용)
+        Returns: [{"group_id": "1", "name": "네팔 목장", "members_count": 13}, ...]
+        """
+        groups = self.get_groups(dept_id)
+        if groups.empty:
+            return []
+
+        members = self.get_members({'status': '재적'})
+
+        results = []
+        for _, group in groups.iterrows():
+            group_id = str(group.get('group_id', ''))
+            group_name = group.get('group_name', '')
+
+            if not group_id:
+                continue
+
+            # 성도 수
+            if not members.empty:
+                group_members = members[members['group_id'].astype(str) == group_id]
+                members_count = len(group_members)
+            else:
+                members_count = 0
+
+            results.append({
+                'group_id': group_id,
+                'name': group_name,
+                'members_count': members_count
+            })
+
+        return results

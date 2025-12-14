@@ -24,6 +24,12 @@ def load_custom_css():
             --radius-sm: 12px;
             --radius-md: 16px;
             --radius-lg: 24px;
+
+            /* Department Colors - dashboard_v3.html 참조 */
+            --dept-adults: #6B5B47;
+            --dept-youth: #556B82;
+            --dept-teens: #6B8E23;
+            --dept-children: #D2691E;
         }
 
         /* Base Settings */
@@ -556,6 +562,523 @@ def load_custom_css():
             background: var(--color-secondary);
         }
 
+        /* ========================================
+           Stacked Bar Chart - dashboard_v3.html
+           ======================================== */
+        .stacked-chart-section {
+            background: var(--color-surface);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            box-shadow: var(--shadow-soft);
+            margin-bottom: 32px;
+        }
+
+        .chart-wrapper {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            height: 280px;
+            gap: 16px;
+            padding: 20px 0;
+            border-bottom: 2px solid var(--color-border);
+        }
+
+        .bar-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .stacked-bar {
+            width: 100%;
+            max-width: 60px;
+            height: 240px;
+            background: white;
+            border-radius: 6px 6px 0 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .stacked-bar:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .bar-segment {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .bar-segment.adults { background: var(--dept-adults); }
+        .bar-segment.youth { background: var(--dept-youth); }
+        .bar-segment.teens { background: var(--dept-teens); }
+        .bar-segment.children { background: var(--dept-children); }
+
+        .bar-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-primary);
+            text-align: center;
+        }
+
+        /* Stacked Chart Legend */
+        .stacked-chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            flex-wrap: wrap;
+            padding-top: 20px;
+            border-top: 1px solid var(--color-border);
+            margin-top: 20px;
+        }
+
+        .legend-item-dept {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--color-text);
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+
+        .legend-color.adults { background: var(--dept-adults); }
+        .legend-color.youth { background: var(--dept-youth); }
+        .legend-color.teens { background: var(--dept-teens); }
+        .legend-color.children { background: var(--dept-children); }
+
+        /* ========================================
+           Department Cards - dashboard_v3.html
+           ======================================== */
+        .hierarchy-section {
+            background: var(--color-surface);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            box-shadow: var(--shadow-soft);
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--color-primary);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title svg {
+            width: 22px;
+            height: 22px;
+            color: var(--color-accent);
+        }
+
+        .dept-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .dept-card {
+            background: linear-gradient(135deg, var(--color-accent-light) 0%, rgba(201, 169, 98, 0.05) 100%);
+            border: 2px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: visible;
+        }
+
+        .dept-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            border-radius: 16px 16px 0 0;
+            transition: all 0.3s ease;
+        }
+
+        .dept-card.adults::before { background: var(--dept-adults); }
+        .dept-card.youth::before { background: var(--dept-youth); }
+        .dept-card.teens::before { background: var(--dept-teens); }
+        .dept-card.children::before { background: var(--dept-children); }
+
+        .dept-card:hover {
+            border-color: var(--color-accent);
+            background: linear-gradient(135deg, var(--color-accent-light) 0%, rgba(201, 169, 98, 0.15) 100%);
+            box-shadow: 0 4px 16px rgba(201, 169, 98, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .dept-card.active {
+            border-color: var(--color-accent);
+            background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-secondary) 100%);
+            color: white;
+        }
+
+        .dept-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .dept-card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .dept-card.active .dept-card-icon {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .dept-card-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-primary);
+        }
+
+        .dept-card.active .dept-card-name {
+            color: white;
+        }
+
+        .dept-card-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .dept-card.active .dept-card-stats {
+            border-top-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-box {
+            text-align: center;
+        }
+
+        .stat-box-label {
+            font-size: 11px;
+            color: var(--color-text-light);
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .dept-card.active .stat-box-label {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .stat-box-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+
+        .dept-card.active .stat-box-value {
+            color: white;
+        }
+
+        /* ========================================
+           Department Popover - dashboard_v3.html
+           ======================================== */
+        .dept-popover {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-12px);
+            background: white;
+            border-radius: 12px;
+            padding: 14px 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            pointer-events: auto;
+            min-width: 280px;
+        }
+
+        .dept-card:hover .dept-popover {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(-16px);
+        }
+
+        .dept-popover::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid white;
+        }
+
+        .popover-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6B7B8C;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .popover-chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            height: 52px;
+            gap: 4px;
+        }
+
+        .popover-bar {
+            flex: 1;
+            border-radius: 2px;
+            transition: all 0.2s ease;
+            min-height: 4px;
+            background: #D0D0D0;
+        }
+
+        .dept-card.adults:hover .popover-bar { background: var(--dept-adults); }
+        .dept-card.youth:hover .popover-bar { background: var(--dept-youth); }
+        .dept-card.teens:hover .popover-bar { background: var(--dept-teens); }
+        .dept-card.children:hover .popover-bar { background: var(--dept-children); }
+
+        /* ========================================
+           Group Grid - dashboard_v3.html
+           ======================================== */
+        .groups-section {
+            margin-top: 28px;
+            padding-top: 28px;
+            border-top: 2px solid var(--color-border);
+        }
+
+        .groups-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text-light);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+        }
+
+        .group-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .group-card {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .group-card:hover {
+            background: var(--color-accent-light);
+            border-color: var(--color-accent);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(201, 169, 98, 0.15);
+        }
+
+        .group-card-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-primary);
+            margin-bottom: 8px;
+        }
+
+        .group-card-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--color-text-light);
+        }
+
+        .group-card-count {
+            background: var(--color-accent-light);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            color: var(--color-accent);
+        }
+
+        .group-card:hover .group-card-count {
+            background: var(--color-accent);
+            color: white;
+        }
+
+        /* ========================================
+           Attendance Modal - dashboard_v3.html
+           ======================================== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .attendance-modal {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1000px;
+            width: 90%;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 2px solid #E8E4DF;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 24px;
+            font-weight: 600;
+            color: #2C3E50;
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        .attendance-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .attendance-table thead {
+            position: sticky;
+            top: 0;
+            background: #F8F6F3;
+            z-index: 10;
+        }
+
+        .attendance-table th {
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: 600;
+            color: #2C3E50;
+            border-bottom: 2px solid #E8E4DF;
+            white-space: nowrap;
+            font-size: 12px;
+        }
+
+        .attendance-table th:first-child {
+            text-align: left;
+            min-width: 120px;
+        }
+
+        .attendance-table td {
+            padding: 12px 8px;
+            text-align: center;
+            border-bottom: 1px solid #E8E4DF;
+            color: #6B7B8C;
+        }
+
+        .attendance-table td:first-child {
+            text-align: left;
+            font-weight: 500;
+            color: #2C3E50;
+        }
+
+        .attendance-table tbody tr:hover {
+            background: #F8F6F3;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 2px solid #E8E4DF;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .dept-container {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-wrapper {
+                height: 220px;
+            }
+
+            .stacked-bar {
+                height: 180px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .group-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            }
+
+            .chart-wrapper {
+                height: 180px;
+                gap: 8px;
+            }
+
+            .stacked-bar {
+                height: 140px;
+                max-width: 50px;
+            }
+
+            .bar-label {
+                font-size: 11px;
+            }
+        }
+
         /* Animation */
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(20px); }
@@ -772,3 +1295,110 @@ def render_bar_chart(data):
         {bars_html}
     </div>
     """
+
+
+# ============================================================
+# 새 컴포넌트 함수 (dashboard_v3.html 기반)
+# ============================================================
+
+def render_dept_chart_legend():
+    """부서별 4색 레전드 (장년/청년/청소년/어린이)"""
+    return '''<div class="stacked-chart-legend">
+        <div class="legend-item-dept"><div class="legend-color adults"></div><span>장년부</span></div>
+        <div class="legend-item-dept"><div class="legend-color youth"></div><span>청년부</span></div>
+        <div class="legend-item-dept"><div class="legend-color teens"></div><span>청소년부</span></div>
+        <div class="legend-item-dept"><div class="legend-color children"></div><span>어린이부</span></div>
+    </div>'''
+
+
+def render_dept_card(dept_id: str, name: str, emoji: str,
+                     groups_count: int, members_count: int,
+                     attendance_rate: int, trend_data: list, is_active: bool = False) -> str:
+    """
+    호버 시 팝오버 차트 표시되는 부서 카드
+
+    Args:
+        dept_id: 부서 ID (adults, youth, teens, children)
+        name: 부서명 (장년부, 청년부 등)
+        emoji: 아이콘 이모지
+        groups_count: 목장/반 수
+        members_count: 성도 수
+        attendance_rate: 출석률 (%)
+        trend_data: 8주 출석률 리스트 [80, 82, 76, ...]
+        is_active: 선택된 상태 여부
+    """
+    active_class = "active" if is_active else ""
+
+    # 팝오버 미니 차트 바 생성
+    popover_bars = ""
+    if trend_data and len(trend_data) > 0:
+        max_val = max(trend_data) if max(trend_data) > 0 else 100
+        for val in trend_data:
+            height_pct = int((val / max_val) * 100) if max_val > 0 else 0
+            popover_bars += f'<div class="popover-bar" style="height:{height_pct}%;" title="{val}%"></div>'
+    else:
+        # 기본 8개 바
+        for _ in range(8):
+            popover_bars += '<div class="popover-bar" style="height:50%;"></div>'
+
+    # 목장/반 라벨 (어린이부는 "반", 나머지는 "목장")
+    group_label = "반" if dept_id == "children" else "목장"
+
+    return f'''<div class="dept-card {dept_id} {active_class}" data-dept="{dept_id}">
+        <div class="dept-popover">
+            <div class="popover-title">{name} 8주 출석률 추이</div>
+            <div class="popover-chart">{popover_bars}</div>
+        </div>
+        <div class="dept-header">
+            <div class="dept-card-icon">{emoji}</div>
+            <div class="dept-card-name">{name}</div>
+        </div>
+        <div class="dept-card-stats">
+            <div class="stat-box">
+                <div class="stat-box-label">{group_label}</div>
+                <div class="stat-box-value">{groups_count}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-box-label">성도</div>
+                <div class="stat-box-value">{members_count}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-box-label">출석률</div>
+                <div class="stat-box-value">{attendance_rate}%</div>
+            </div>
+        </div>
+    </div>'''
+
+
+def render_group_card(name: str, members_count: int) -> str:
+    """목장/반 카드"""
+    return f'''<div class="group-card">
+        <div class="group-card-name">{name}</div>
+        <div class="group-card-info">
+            <span>성도</span>
+            <span class="group-card-count">{members_count}</span>
+        </div>
+    </div>'''
+
+
+def render_group_grid(groups: list, dept_name: str = "장년부") -> str:
+    """
+    목장 그리드 렌더링
+
+    Args:
+        groups: [{"name": "네팔 목장", "members_count": 13}, ...]
+        dept_name: 부서명 (타이틀에 표시)
+    """
+    cards_html = ""
+    for g in groups:
+        cards_html += render_group_card(g.get('name', ''), g.get('members_count', 0))
+
+    return f'''<div class="groups-section">
+        <div class="groups-title">선택된 부서의 목장 ({dept_name})</div>
+        <div class="group-grid">{cards_html}</div>
+    </div>'''
+
+
+def render_section_title(icon_svg: str, title: str) -> str:
+    """섹션 타이틀 (아이콘 + 제목)"""
+    return f'''<div class="section-title">{icon_svg}{title}</div>'''

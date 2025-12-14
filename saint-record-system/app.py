@@ -7,7 +7,8 @@ import time
 from utils.sheets_api import SheetsAPI
 from utils.ui import (
     load_custom_css, render_stat_card, render_dept_item,
-    render_alert_item, render_chart_legend
+    render_alert_item, render_chart_legend,
+    render_dept_chart_legend, render_dept_card, render_group_grid
 )
 
 # ============================================================
@@ -52,7 +53,11 @@ def fetch_dashboard_data_from_api():
         "mokjang_attendance": [],
         "absent_3weeks": [],
         "birthdays": [],
-        "last_sunday": ""
+        "last_sunday": "",
+        # 새로 추가 (dashboard_v3 용)
+        "stacked_chart_data": [],  # 8주 부서별 출석
+        "dept_stats": [],          # 부서별 통계 (카드용)
+        "dept_trends": {}          # 부서별 8주 트렌드 (팝오버용)
     }
 
     try:
@@ -117,6 +122,31 @@ def fetch_dashboard_data_from_api():
             data['birthdays'] = api.get_birthdays_this_week()
         except:
             data['birthdays'] = []
+
+        # ===== 새로 추가: dashboard_v3 용 데이터 =====
+
+        # 8. 8주 부서별 출석 (스택 바 차트용)
+        try:
+            data['stacked_chart_data'] = api.get_8week_dept_attendance()
+        except:
+            data['stacked_chart_data'] = []
+
+        # 9. 부서별 통계 (부서 카드용)
+        try:
+            data['dept_stats'] = api.get_dept_stats()
+        except:
+            data['dept_stats'] = []
+
+        # 10. 부서별 8주 트렌드 (팝오버 미니차트용)
+        try:
+            dept_trends = {}
+            for dept in data['dept_stats']:
+                dept_id = dept.get('dept_id', '')
+                if dept_id:
+                    dept_trends[dept_id] = api.get_dept_attendance_trend(dept_id)
+            data['dept_trends'] = dept_trends
+        except:
+            data['dept_trends'] = {}
 
     except Exception as e:
         print(f"Data Load Error: {e}")
@@ -287,62 +317,56 @@ with stat_cols[3]:
 
 st.markdown("<div style='height: 36px;'></div>", unsafe_allow_html=True)
 
-# 메인 컨텐츠 그리드
-left_col, right_col = st.columns([1.5, 1])
+# ============================================================
+# 섹션 1: 8주 출석 현황 (스택 바 차트)
+# ============================================================
+bar_chart_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:22px;height:22px;color:#C9A962;"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>'
+st.markdown(f'''<div class="stacked-chart-section">
+    <div class="section-title">{bar_chart_svg}최근 8주 출석 현황</div>
+''', unsafe_allow_html=True)
 
-# 왼쪽: 차트 카드
-with left_col:
-    # HTML 참조: .card-title svg { width: 20px; height: 20px; color: var(--color-accent); }
-    bar_chart_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;color:#C9A962;"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>'
-    chevron_svg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>'
-    st.markdown(f'<div style="background:#FFFFFF;border-radius:24px;padding:28px;box-shadow:0 2px 20px rgba(44,62,80,0.06);height:100%;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;"><h2 style="font-size:18px;font-weight:600;color:#2C3E50;display:flex;align-items:center;gap:10px;margin:0;">{bar_chart_svg}최근 4주 출석 현황</h2></div>', unsafe_allow_html=True)
-    
-    # 차트 (Plotly 사용)
-    weeks = dashboard_data.get('chart_dates', ['12/15', '12/22', '12/29', '1/5'])
-    attendance_data = dashboard_data.get('chart_attend', [0, 0, 0, 0])
-    total_data = dashboard_data.get('chart_total', [0, 0, 0, 0])
-    
-    if not weeks: 
-        weeks = ['-', '-', '-', '-']
-        attendance_data = [0,0,0,0]
-        total_data = [0,0,0,0]
+# 스택 바 차트 데이터
+stacked_data = dashboard_data.get('stacked_chart_data', [])
+
+if stacked_data:
+    # Plotly 스택 바 차트
+    weeks = [d['week'] for d in stacked_data]
+    adults_data = [d['adults'] for d in stacked_data]
+    youth_data = [d['youth'] for d in stacked_data]
+    teens_data = [d['teens'] for d in stacked_data]
+    children_data = [d['children'] for d in stacked_data]
 
     fig = go.Figure()
 
-    # 출석 bar (왼쪽, 골드색)
+    # 어린이부 (맨 아래)
     fig.add_trace(go.Bar(
-        x=weeks,
-        y=attendance_data,
-        name='출석 인원',
-        marker_color='#C9A962',
-        marker_line_width=0,
-        width=0.35,
-        text=attendance_data,
-        textposition='outside',
-        textfont=dict(size=11, color='#6B7B8C')
+        x=weeks, y=children_data, name='어린이부',
+        marker_color='#D2691E', marker_line_width=0
+    ))
+    # 청소년부
+    fig.add_trace(go.Bar(
+        x=weeks, y=teens_data, name='청소년부',
+        marker_color='#6B8E23', marker_line_width=0
+    ))
+    # 청년부
+    fig.add_trace(go.Bar(
+        x=weeks, y=youth_data, name='청년부',
+        marker_color='#556B82', marker_line_width=0
+    ))
+    # 장년부 (맨 위)
+    fig.add_trace(go.Bar(
+        x=weeks, y=adults_data, name='장년부',
+        marker_color='#6B5B47', marker_line_width=0
     ))
 
-    # 전체 인원 bar (오른쪽, 회색)
-    fig.add_trace(go.Bar(
-        x=weeks,
-        y=total_data,
-        name='전체 인원',
-        marker_color='#E8E4DF',
-        marker_line_width=0,
-        width=0.35
-    ))
-
-    # HTML 참조처럼 나란히 배치
     fig.update_layout(
-        barmode='group',
-        bargap=0.3,
-        bargroupgap=0.1,
+        barmode='stack',
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=0, r=0, t=30, b=30),
-        height=260,
+        margin=dict(l=0, r=0, t=10, b=40),
+        height=280,
         showlegend=False,
-        barcornerradius=6,
+        barcornerradius=4,
         xaxis=dict(
             showgrid=False,
             showline=False,
@@ -357,70 +381,121 @@ with left_col:
             zeroline=False
         )
     )
-    
+
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+else:
+    st.markdown('<p style="color:#6B7B8C;font-size:14px;text-align:center;padding:40px;">출석 데이터가 없습니다</p>', unsafe_allow_html=True)
 
-    # 차트 레전드
-    st.markdown(render_chart_legend(), unsafe_allow_html=True)
+# 차트 레전드 (부서별 4색)
+st.markdown(render_dept_chart_legend(), unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown("</div>", unsafe_allow_html=True)
+st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
 
-# 오른쪽: 출석 현황 (탭 + 알림 + 빠른 실행)
-with right_col:
-    # HTML 참조: .card-title svg { width: 20px; height: 20px; color: var(--color-accent); } where accent=#C9A962
-    st.markdown('''<div style="background:#FFFFFF;border-radius:24px;padding:28px;box-shadow:0 2px 20px rgba(44,62,80,0.06);"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;"><h2 style="font-size:18px;font-weight:600;color:#2C3E50;display:flex;align-items:center;gap:10px;margin:0;"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;color:#C9A962;"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>출석 현황</h2></div>''', unsafe_allow_html=True)
+# ============================================================
+# 섹션 2: 부서별 현황 (2x2 카드 + 목장 그리드)
+# ============================================================
+hierarchy_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:22px;height:22px;color:#C9A962;"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>'
+st.markdown(f'''<div class="hierarchy-section">
+    <div class="section-title">{hierarchy_svg}부서별 현황</div>
+''', unsafe_allow_html=True)
 
-    # 탭 (Streamlit 네이티브 탭 사용)
-    tab_dept, tab_mokjang = st.tabs(["부서별", "목장별"])
-
-    with tab_dept:
-        # 부서별 출석 현황 (실제 DB 데이터)
-        dept_data = dashboard_data.get('dept_attendance', [])
-        if dept_data:
-            for dept in dept_data:
-                st.markdown(render_dept_item(
-                    dept['emoji'],
-                    dept['css_class'],
-                    dept['name'],
-                    dept['present'],
-                    dept['total']
-                ), unsafe_allow_html=True)
-        else:
-            st.markdown('<p style="color:#6B7B8C;font-size:14px;text-align:center;padding:20px;">데이터가 없습니다</p>', unsafe_allow_html=True)
-
-    with tab_mokjang:
-        # 목장별 출석 현황 (실제 DB 데이터)
-        mokjang_data = dashboard_data.get('mokjang_attendance', [])
-        if mokjang_data:
-            for mokjang in mokjang_data:
-                st.markdown(render_dept_item(
-                    mokjang['emoji'],
-                    mokjang['css_class'],
-                    mokjang['name'],
-                    mokjang['present'],
-                    mokjang['total']
-                ), unsafe_allow_html=True)
-        else:
-            st.markdown('<p style="color:#6B7B8C;font-size:14px;text-align:center;padding:20px;">데이터가 없습니다</p>', unsafe_allow_html=True)
-
-    # 알림 섹션 - HTML 참조: .card-title { font-size: 18px; } 하지만 알림 제목은 style="font-size: 15px;"
-    st.markdown('''<div style="margin-top:24px;padding-top:20px;border-top:1px solid #E8E4DF;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;color:#C9A962;"><path d="M18 8A6 6 0 106 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span style="font-size:15px;font-weight:600;color:#2C3E50;">알림</span></div></div>''', unsafe_allow_html=True)
-
-    # 3주 연속 결석 알림 (실제 DB 데이터)
-    absent_list = dashboard_data.get('absent_3weeks', [])
-    if absent_list:
-        names = ', '.join([m['name'] for m in absent_list[:3]])
-        extra = f" 외 {len(absent_list)-3}명" if len(absent_list) > 3 else ""
-        st.markdown(render_alert_item("warning", "warning", "3주 연속 결석", names + extra), unsafe_allow_html=True)
+# 부서 선택 상태 초기화
+if 'selected_dept' not in st.session_state:
+    dept_stats = dashboard_data.get('dept_stats', [])
+    if dept_stats:
+        st.session_state.selected_dept = dept_stats[0].get('dept_id', '')
     else:
-        st.markdown(render_alert_item("info", "check", "출석 양호", "3주 연속 결석자가 없습니다"), unsafe_allow_html=True)
+        st.session_state.selected_dept = ''
 
-    # 이번 주 생일 알림 (실제 DB 데이터)
-    birthdays = dashboard_data.get('birthdays', [])
-    if birthdays:
-        bday_text = ', '.join([f"{b['name']} ({b['birth_date']})" for b in birthdays[:3]])
-        extra = f" 외 {len(birthdays)-3}명" if len(birthdays) > 3 else ""
-        st.markdown(render_alert_item("info", "gift", "🎂 이번 주 생일", bday_text + extra), unsafe_allow_html=True)
+# 부서 카드 2x2 그리드
+dept_stats = dashboard_data.get('dept_stats', [])
+dept_trends = dashboard_data.get('dept_trends', {})
 
-    st.markdown("</div>", unsafe_allow_html=True)
+if dept_stats:
+    st.markdown('<div class="dept-container">', unsafe_allow_html=True)
+    for dept in dept_stats:
+        dept_id = dept.get('dept_id', '')
+        trend_data = dept_trends.get(dept_id, [])
+        is_active = (dept_id == st.session_state.selected_dept)
+
+        card_html = render_dept_card(
+            dept_id=dept.get('css_class', 'adults'),
+            name=dept.get('name', ''),
+            emoji=dept.get('emoji', '👥'),
+            groups_count=dept.get('groups_count', 0),
+            members_count=dept.get('members_count', 0),
+            attendance_rate=dept.get('attendance_rate', 0),
+            trend_data=trend_data,
+            is_active=is_active
+        )
+        st.markdown(card_html, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # 부서 선택 버튼 (Streamlit 네이티브)
+    st.markdown('<div style="margin-top:16px;">', unsafe_allow_html=True)
+    dept_cols = st.columns(len(dept_stats))
+    for i, dept in enumerate(dept_stats):
+        with dept_cols[i]:
+            if st.button(f"📍 {dept.get('name', '')}", key=f"dept_btn_{dept.get('dept_id', i)}", use_container_width=True):
+                st.session_state.selected_dept = dept.get('dept_id', '')
+                st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # 선택된 부서의 목장 그리드
+    if st.session_state.selected_dept:
+        try:
+            api = st.session_state.api
+            groups = api.get_groups_by_dept(st.session_state.selected_dept)
+
+            # 선택된 부서명 찾기
+            selected_dept_name = "장년부"
+            for dept in dept_stats:
+                if dept.get('dept_id') == st.session_state.selected_dept:
+                    selected_dept_name = dept.get('name', '장년부')
+                    break
+
+            if groups:
+                st.markdown(render_group_grid(groups, selected_dept_name), unsafe_allow_html=True)
+            else:
+                st.markdown(f'<div class="groups-section"><div class="groups-title">선택된 부서의 목장 ({selected_dept_name})</div><p style="color:#6B7B8C;font-size:14px;text-align:center;padding:20px;">목장 데이터가 없습니다</p></div>', unsafe_allow_html=True)
+        except Exception as e:
+            st.markdown(f'<div class="groups-section"><p style="color:#6B7B8C;font-size:14px;text-align:center;padding:20px;">목장 데이터를 불러올 수 없습니다</p></div>', unsafe_allow_html=True)
+else:
+    st.markdown('<p style="color:#6B7B8C;font-size:14px;text-align:center;padding:40px;">부서 데이터가 없습니다</p>', unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
+
+# ============================================================
+# 섹션 3: 알림
+# ============================================================
+st.markdown('''<div style="background:#FFFFFF;border-radius:24px;padding:28px;box-shadow:0 2px 20px rgba(44,62,80,0.06);">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:22px;height:22px;color:#C9A962;">
+            <path d="M18 8A6 6 0 106 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 01-3.46 0"/>
+        </svg>
+        <span style="font-size:18px;font-weight:600;color:#2C3E50;">알림</span>
+    </div>
+''', unsafe_allow_html=True)
+
+# 3주 연속 결석 알림
+absent_list = dashboard_data.get('absent_3weeks', [])
+if absent_list:
+    names = ', '.join([m['name'] for m in absent_list[:3]])
+    extra = f" 외 {len(absent_list)-3}명" if len(absent_list) > 3 else ""
+    st.markdown(render_alert_item("warning", "warning", "3주 연속 결석", names + extra), unsafe_allow_html=True)
+else:
+    st.markdown(render_alert_item("info", "check", "출석 양호", "3주 연속 결석자가 없습니다"), unsafe_allow_html=True)
+
+# 이번 주 생일 알림
+birthdays = dashboard_data.get('birthdays', [])
+if birthdays:
+    bday_text = ', '.join([f"{b['name']} ({b['birth_date']})" for b in birthdays[:3]])
+    extra = f" 외 {len(birthdays)-3}명" if len(birthdays) > 3 else ""
+    st.markdown(render_alert_item("info", "gift", "🎂 이번 주 생일", bday_text + extra), unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
 
