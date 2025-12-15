@@ -5,7 +5,7 @@ from datetime import date, timedelta
 import pandas as pd
 import plotly.graph_objects as go
 import time
-from utils.sheets_api import SheetsAPI
+from utils.sheets_api import SheetsAPI, clear_sheets_cache
 from utils.ui import (
     load_custom_css, render_stat_card, render_dept_item,
     render_alert_item, render_chart_legend,
@@ -184,7 +184,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.1"  # 버전 변경 시 캐시 자동 클리어
+APP_VERSION = "v3.2"  # 버전 변경 시 캐시 자동 클리어 (버그 수정: API 429, 캐시 갱신, UI 일원화)
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -289,15 +289,16 @@ with col_date:
         key="date_selector"
     )
     # 일요일이 아닌 날짜 선택 시 가장 가까운 일요일로 조정
-    if selected_date.weekday() != 6:  # 일요일이 아니면
-        adjusted_sunday = get_nearest_sunday(selected_date)
-        if adjusted_sunday != st.session_state.selected_sunday:
-            st.session_state.selected_sunday = adjusted_sunday
-            st.session_state['dashboard_data_loaded'] = False
-            st.rerun()
-    elif selected_date != st.session_state.selected_sunday:
-        st.session_state.selected_sunday = selected_date
+    new_sunday = selected_date if selected_date.weekday() == 6 else get_nearest_sunday(selected_date)
+
+    # 날짜 변경 감지 시 모든 캐시 클리어
+    if new_sunday != st.session_state.selected_sunday:
+        st.session_state.selected_sunday = new_sunday
+        # 모든 캐시 완전 클리어
+        fetch_dashboard_data_from_api.clear()
+        clear_sheets_cache()  # sheets_api 캐시도 클리어
         st.session_state['dashboard_data_loaded'] = False
+        st.session_state['dashboard_cache_time'] = 0
         st.rerun()
 
 with col_refresh:
@@ -313,8 +314,12 @@ with col_refresh:
         cache_info = "새 데이터"
     st.markdown(f'<p style="font-size:10px;color:#6B7B8C;text-align:center;margin:8px 0 4px 0;">{cache_info}</p>', unsafe_allow_html=True)
     if st.button("🔄", key="refresh_btn", help="데이터 새로고침"):
+        # 모든 캐시 완전 클리어
+        fetch_dashboard_data_from_api.clear()
+        clear_sheets_cache()
         st.session_state['force_refresh'] = True
         st.session_state['dashboard_data_loaded'] = False
+        st.session_state['dashboard_cache_time'] = 0
         st.rerun()
 
 st.markdown("<div style='height: 36px;'></div>", unsafe_allow_html=True)
@@ -466,40 +471,70 @@ if 'selected_dept' not in st.session_state:
     else:
         st.session_state.selected_dept = ''
 
-# 부서 카드 2x2 그리드
+# 부서 카드 그리드 (클릭 가능한 통합 UI)
 dept_stats = dashboard_data.get('dept_stats', [])
 dept_trends = dashboard_data.get('dept_trends', {})
 
 if dept_stats:
-    st.markdown('<div class="dept-container">', unsafe_allow_html=True)
-    for dept in dept_stats:
-        dept_id = dept.get('dept_id', '')
-        trend_data = dept_trends.get(dept_id, [])
-        is_active = (dept_id == st.session_state.selected_dept)
-
-        card_html = render_dept_card(
-            dept_id=dept.get('css_class', 'adults'),
-            name=dept.get('name', ''),
-            emoji=dept.get('emoji', '👥'),
-            groups_count=dept.get('groups_count', 0),
-            members_count=dept.get('members_count', 0),
-            attendance_rate=dept.get('attendance_rate', 0),
-            trend_data=trend_data,
-            is_active=is_active
-        )
-        st.markdown(card_html, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # 부서 선택 버튼 (Streamlit 네이티브)
-    st.markdown('<div style="margin-top:16px;">', unsafe_allow_html=True)
+    # 부서 수에 따라 컬럼 생성 (기본 4개)
     dept_cols = st.columns(len(dept_stats))
+
     for i, dept in enumerate(dept_stats):
+        dept_id = dept.get('dept_id', '')
+        dept_name = dept.get('name', '')
+        is_active = (dept_id == st.session_state.selected_dept)
+        trend_data = dept_trends.get(dept_id, [])
+
         with dept_cols[i]:
-            if st.button(f"📍 {dept.get('name', '')}", key=f"dept_btn_{dept.get('dept_id', i)}", use_container_width=True):
-                st.session_state.selected_dept = dept.get('dept_id', '')
+            # 부서 선택 버튼 (클릭 가능)
+            btn_type = "primary" if is_active else "secondary"
+            if st.button(
+                f"{dept.get('emoji', '👥')} {dept_name}",
+                key=f"dept_card_{dept_id}",
+                use_container_width=True,
+                type=btn_type
+            ):
+                st.session_state.selected_dept = dept_id
                 st.session_state.selected_group = None  # 부서 변경 시 목장 선택 초기화
                 st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+
+            # 부서 통계 카드 (시각적 정보)
+            groups_count = dept.get('groups_count', 0)
+            members_count = dept.get('members_count', 0)
+            attendance_rate = dept.get('attendance_rate', 0)
+            group_label = "반" if dept.get('css_class') == "children" else "목장"
+
+            # 미니 트렌드 바 생성
+            trend_bars = ""
+            if trend_data:
+                max_val = max(trend_data) if max(trend_data) > 0 else 100
+                for val in trend_data:
+                    h = int((val / max_val) * 40) if max_val > 0 else 0
+                    trend_bars += f'<div style="width:8px;height:{h}px;background:#C9A962;border-radius:2px;"></div>'
+
+            active_style = "border-color:#C9A962;background:linear-gradient(135deg,rgba(201,169,98,0.15) 0%,rgba(201,169,98,0.05) 100%);" if is_active else ""
+
+            st.markdown(f'''
+                <div style="background:#F8F6F3;border:2px solid #E8E4DF;border-radius:12px;padding:16px;margin-top:8px;{active_style}">
+                    <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:12px;">
+                        <div style="text-align:center;flex:1;">
+                            <div style="font-size:10px;color:#6B7B8C;margin-bottom:2px;">{group_label}</div>
+                            <div style="font-size:18px;font-weight:700;color:#2C3E50;">{groups_count}</div>
+                        </div>
+                        <div style="text-align:center;flex:1;">
+                            <div style="font-size:10px;color:#6B7B8C;margin-bottom:2px;">성도</div>
+                            <div style="font-size:18px;font-weight:700;color:#2C3E50;">{members_count}</div>
+                        </div>
+                        <div style="text-align:center;flex:1;">
+                            <div style="font-size:10px;color:#6B7B8C;margin-bottom:2px;">출석률</div>
+                            <div style="font-size:18px;font-weight:700;color:#4A9B7F;">{attendance_rate}%</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:flex-end;justify-content:space-between;height:40px;gap:2px;padding-top:8px;border-top:1px solid #E8E4DF;">
+                        {trend_bars if trend_bars else '<div style="color:#6B7B8C;font-size:11px;">8주 트렌드</div>'}
+                    </div>
+                </div>
+            ''', unsafe_allow_html=True)
 
     # 목장 선택 상태 초기화
     if 'selected_group' not in st.session_state:

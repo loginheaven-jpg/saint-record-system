@@ -691,8 +691,8 @@ def load_custom_css():
 
         .dept-container {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
+            grid-template-columns: repeat(4, 1fr);  /* 기본: 4x1 */
+            gap: 16px;
             margin-bottom: 20px;
         }
 
@@ -1045,11 +1045,13 @@ def load_custom_css():
         }
 
         /* Responsive */
-        @media (max-width: 1024px) {
+        @media (max-width: 1200px) {
             .dept-container {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, 1fr);  /* 태블릿: 2x2 */
             }
+        }
 
+        @media (max-width: 1024px) {
             .chart-wrapper {
                 height: 220px;
             }
@@ -1060,6 +1062,10 @@ def load_custom_css():
         }
 
         @media (max-width: 768px) {
+            .dept-container {
+                grid-template-columns: 1fr;  /* 모바일: 1x4 */
+            }
+
             .group-grid {
                 grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
             }

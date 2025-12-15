@@ -102,6 +102,21 @@ def _cached_get_sheet_data(sheet_name: str) -> List[Dict]:
 def clear_sheets_cache():
     """시트 캐시 수동 삭제"""
     _cached_get_sheet_data.clear()
+    _cached_get_attendance_data.clear()
+
+
+@st.cache_data(ttl=300, show_spinner=False)  # 5분 캐시
+def _cached_get_attendance_data(year: int) -> List[Dict]:
+    """출석 시트 데이터 캐시 (5분 TTL) - API 429 에러 방지"""
+    sheet_name = f'Attendance_{year}'
+    try:
+        client = _get_gspread_client()
+        spreadsheet = client.open_by_key(SHEET_ID)
+        sheet = spreadsheet.worksheet(sheet_name)
+        return sheet.get_all_records()
+    except Exception as e:
+        print(f"Attendance data fetch error ({sheet_name}): {e}")
+        return []
 
 
 class SheetsAPI:
@@ -240,26 +255,20 @@ class SheetsAPI:
     # ===== Attendance =====
     
     def get_attendance(
-        self, 
-        year: int, 
+        self,
+        year: int,
         week_no: Optional[int] = None,
         member_ids: Optional[List[str]] = None,
         date: Optional[str] = None
     ) -> pd.DataFrame:
-        """출석 조회"""
-        sheet_name = f'Attendance_{year}'
-        
-        try:
-            sheet = self.get_sheet(sheet_name)
-        except:
-            return pd.DataFrame()
-        
-        data = sheet.get_all_records()
+        """출석 조회 (5분 캐시 활용 - API 429 에러 방지)"""
+        # 캐시된 데이터 사용
+        data = _cached_get_attendance_data(year)
         df = pd.DataFrame(data)
-        
+
         if df.empty:
             return df
-        
+
         if week_no:
             df = df[df['week_no'] == week_no]
         if member_ids:
@@ -267,7 +276,7 @@ class SheetsAPI:
         if date:
             # 문자열 비교 (YYYY-MM-DD)
             df = df[df['attend_date'] == date]
-            
+
         return df
     
     def save_attendance(self, records: List[AttendanceCreate]) -> Dict:
@@ -723,8 +732,8 @@ class SheetsAPI:
         # 목장 목록
         groups = self.get_groups()
 
-        # 재적 성도
-        members = self.get_members({'status': '재적'})
+        # 출석 성도 (대시보드 기준)
+        members = self.get_members({'status': '출석'})
 
         # 최근 일요일
         now = pd.Timestamp.now()
@@ -794,8 +803,8 @@ class SheetsAPI:
         days_since_sunday = (now.weekday() + 1) % 7
         last_sunday = now - pd.Timedelta(days=days_since_sunday)
 
-        # 재적 성도
-        members = self.get_members({'status': '재적'})
+        # 출석 성도 (대시보드 기준)
+        members = self.get_members({'status': '출석'})
         if members.empty:
             return [0] * 8
 
@@ -838,7 +847,8 @@ class SheetsAPI:
         if groups.empty:
             return []
 
-        members = self.get_members({'status': '재적'})
+        # 출석 성도 (대시보드 기준)
+        members = self.get_members({'status': '출석'})
 
         results = []
         for _, group in groups.iterrows():
