@@ -33,11 +33,11 @@ class AttendType(str, Enum):
 
 
 class MemberStatus(str, Enum):
-    """성도 상태"""
-    ACTIVE = '재적'
-    TRANSFERRED = '전출'
-    DECEASED = '사망'
-    LONG_ABSENT = '장기장결'
+    """성도 상태 - 출석률 모수는 '재적'"""
+    ACTIVE = '재적'        # 정상 출석 (출석률 모수)
+    TRANSFERRED = '전출'   # 다른 교회로 전출
+    ON_LEAVE = '휴적'      # 일시적 휴직
+    VISITOR = '방문'       # 방문자
 
 
 class MemberType(str, Enum):
@@ -63,4 +63,29 @@ class GroupRole(str, Enum):
     """목장 직분"""
     LEADER = '목자'
     CO_LEADER = '목녀'
+    ASSISTANT = '목부'
     MEMBER = '목원'
+
+
+class Relationship(str, Enum):
+    """가족 관계"""
+    HEAD = '가장'
+    SPOUSE = '아내'
+    SON = '아들'
+    DAUGHTER = '딸'
+    FATHER = '부친'
+    MOTHER = '모친'
+    GRANDSON = '손자'
+    GRANDDAUGHTER = '손녀'
+    BROTHER = '형제'
+    SISTER = '자매'
+    OTHER = '기타'
+
+
+class BaptismStatus(str, Enum):
+    """신급 (세례 상태)"""
+    BAPTISM = '세례'
+    CONFIRMATION = '입교'
+    LEARNING = '학습'
+    INFANT_BAPTISM = '유아세례'
+    OTHER = '기타'

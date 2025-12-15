@@ -80,8 +80,8 @@ def fetch_dashboard_data_from_api(base_date: str):
         last_sunday = pd.Timestamp(base_date)
         last_sunday_str = base_date
 
-        # 1. 전체 성도 (status='출석')
-        df_members = api.get_members({'status': '출석'})
+        # 1. 전체 재적 성도 (status='재적' - 출석률 모수)
+        df_members = api.get_members({'status': '재적'})
         data['total_members'] = len(df_members)
 
         # 2. 이번달 신규 등록
@@ -184,7 +184,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.6"  # 레이아웃 최적화: 공백 축소, 바차트 확대, 카드 아이콘+숫자 가로배치
+APP_VERSION = "v3.8"  # 회원정보 UI 개편: 엑셀 테이블, 신규 필드, status=재적 기준
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -692,6 +692,10 @@ if dept_stats:
                             df_data.append(row)
 
                         df = pd.DataFrame(df_data)
+
+                        # "전체" 선택 시 목장(1st) + 이름(2nd)으로 정렬
+                        if not st.session_state.selected_group:
+                            df = df.sort_values(by=['목장', '이름'], ascending=[True, True]).reset_index(drop=True)
 
                         # 원본 데이터 저장 (변경 감지용)
                         original_key = f"original_attendance_{st.session_state.selected_dept}_{st.session_state.selected_group}"

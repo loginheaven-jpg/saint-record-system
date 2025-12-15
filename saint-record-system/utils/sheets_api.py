@@ -462,8 +462,8 @@ class SheetsAPI:
         if departments.empty:
             return []
 
-        # 출석 성도 조회 (status='출석'인 성도만 - 대시보드 분모 기준)
-        members = self.get_members({'status': '출석'})
+        # 재적 성도 조회 (status='재적'인 성도만 - 출석률 모수)
+        members = self.get_members({'status': '재적'})
         if members.empty:
             return []
 
@@ -536,8 +536,8 @@ class SheetsAPI:
         if groups.empty:
             return []
 
-        # 출석 성도 조회 (status='출석'인 성도만 - 대시보드 분모 기준)
-        members = self.get_members({'status': '출석'})
+        # 재적 성도 조회 (status='재적'인 성도만 - 출석률 모수)
+        members = self.get_members({'status': '재적'})
         if members.empty:
             return []
 
@@ -588,13 +588,10 @@ class SheetsAPI:
 
     def get_new_members_this_month(self) -> Dict:
         """
-        이번 달 신규 등록 성도 수 (출석 중인 재적교인 기준)
+        이번 달 신규 등록 성도 수 (재적 성도 기준)
         Returns: {'count': 3, 'last_month_count': 5}
         """
-        members = self.get_members({
-            'status': '출석',
-            'member_type': ['등록교인', '회원교인']
-        })
+        members = self.get_members({'status': '재적'})
         if members.empty:
             return {'count': 0, 'last_month_count': 0}
 
@@ -621,7 +618,7 @@ class SheetsAPI:
 
     def get_3week_absent_members(self) -> List[Dict]:
         """
-        3주 연속 결석 성도 목록 (출석 중인 재적교인 기준)
+        3주 연속 결석 성도 목록 (재적 성도 기준)
         Returns: [{'member_id': 'M001', 'name': '홍길동', 'weeks_absent': 3}, ...]
         """
         now = pd.Timestamp.now()
@@ -629,10 +626,7 @@ class SheetsAPI:
         days_since_sunday = (now.weekday() + 1) % 7
         last_sunday = now - pd.Timedelta(days=days_since_sunday)
 
-        members = self.get_members({
-            'status': '출석',
-            'member_type': ['등록교인', '회원교인']
-        })
+        members = self.get_members({'status': '재적'})
         if members.empty:
             return []
 
@@ -669,13 +663,10 @@ class SheetsAPI:
 
     def get_birthdays_this_week(self) -> List[Dict]:
         """
-        이번 주 생일 성도 목록 (출석 중인 재적교인 기준)
+        이번 주 생일 성도 목록 (재적 성도 기준)
         Returns: [{'member_id': 'M001', 'name': '홍길동', 'birth_date': '12/15'}, ...]
         """
-        members = self.get_members({
-            'status': '출석',
-            'member_type': ['등록교인', '회원교인']
-        })
+        members = self.get_members({'status': '재적'})
         if members.empty:
             return []
 
@@ -740,8 +731,8 @@ class SheetsAPI:
         if departments.empty:
             return []
 
-        # 출석 성도 조회 (status='출석'인 성도만 - 대시보드 분모 기준)
-        members = self.get_members({'status': '출석'})
+        # 재적 성도 조회 (status='재적'인 성도만 - 출석률 모수)
+        members = self.get_members({'status': '재적'})
         if members.empty:
             return []
 
@@ -822,8 +813,8 @@ class SheetsAPI:
         # 목장 목록
         groups = self.get_groups()
 
-        # 출석 성도 (대시보드 기준)
-        members = self.get_members({'status': '출석'})
+        # 재적 성도 (출석률 모수)
+        members = self.get_members({'status': '재적'})
 
         # 기준 날짜 설정 (선택한 날짜 또는 오늘 기준 최근 일요일)
         if base_date:
@@ -905,8 +896,8 @@ class SheetsAPI:
             days_since_sunday = (now.weekday() + 1) % 7
             last_sunday = now - pd.Timedelta(days=days_since_sunday)
 
-        # 출석 성도 (대시보드 기준)
-        members = self.get_members({'status': '출석'})
+        # 재적 성도 (출석률 모수)
+        members = self.get_members({'status': '재적'})
         if members.empty:
             return [0] * 8
 
@@ -949,8 +940,8 @@ class SheetsAPI:
         if groups.empty:
             return []
 
-        # 출석 성도 (대시보드 기준)
-        members = self.get_members({'status': '출석'})
+        # 재적 성도 (출석률 모수)
+        members = self.get_members({'status': '재적'})
 
         results = []
         for _, group in groups.iterrows():
@@ -1004,7 +995,7 @@ class SheetsAPI:
             })
 
         # 출석 성도 조회
-        members = self.get_members({'status': '출석'})
+        members = self.get_members({'status': '재적'})
         if members.empty:
             return {'weeks': [w['label'] for w in weeks], 'members': []}
 

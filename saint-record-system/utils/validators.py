@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, validator
 from typing import Optional
 from datetime import date
-from .enums import AttendType, MemberType, MemberStatus, ChurchRole, GroupRole
+from .enums import AttendType, MemberType, MemberStatus, ChurchRole, GroupRole, Relationship, BaptismStatus
 
 class MemberBase(BaseModel):
     name: str = Field(..., min_length=1)
@@ -16,6 +16,9 @@ class MemberBase(BaseModel):
     group_role: str = GroupRole.MEMBER.value
     member_type: str = MemberType.REGISTERED.value
     status: str = MemberStatus.ACTIVE.value
+    relationship: str = Relationship.OTHER.value  # 가족관계
+    baptism_status: Optional[str] = None  # 신급 (세례/입교/학습/유아세례/기타)
+    register_date: Optional[date] = None  # 교회등록일
     photo_url: Optional[str] = ''
 
 class MemberCreate(MemberBase):
@@ -36,6 +39,9 @@ class MemberUpdate(BaseModel):
     group_role: Optional[str] = None
     member_type: Optional[str] = None
     status: Optional[str] = None
+    relationship: Optional[str] = None  # 가족관계
+    baptism_status: Optional[str] = None  # 신급
+    register_date: Optional[date] = None  # 교회등록일
     photo_url: Optional[str] = None
     family_id: Optional[str] = None
 
