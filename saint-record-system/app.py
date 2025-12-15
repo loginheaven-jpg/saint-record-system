@@ -184,7 +184,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.5"  # 부서 색상바, 출석 일괄저장 버튼, 8주 차트 정적화
+APP_VERSION = "v3.6"  # 레이아웃 최적화: 공백 축소, 바차트 확대, 카드 아이콘+숫자 가로배치
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -322,7 +322,7 @@ with col_refresh:
         st.session_state['dashboard_cache_time'] = 0
         st.rerun()
 
-st.markdown("<div style='height: 36px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
 
 # 통계 데이터 계산
 val_total = 0
@@ -378,14 +378,14 @@ with stat_cols[3]:
     html_3 = render_stat_card("user-plus", "gold", str(new_count), "신규 등록", new_trend_str, new_trend_dir, False)
     st.markdown(html_3, unsafe_allow_html=True)
 
-st.markdown("<div style='height: 36px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
 
 # ============================================================
 # 섹션 1: 8주 출석 현황 (스택 바 차트)
 # ============================================================
-bar_chart_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:22px;height:22px;color:#C9A962;"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>'
-st.markdown(f'''<div class="stacked-chart-section">
-    <div class="section-title">{bar_chart_svg}최근 8주 출석 현황</div>
+bar_chart_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;color:#C9A962;"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>'
+st.markdown(f'''<div class="stacked-chart-section" style="padding:12px 20px;">
+    <div class="section-title" style="font-size:15px;margin-bottom:8px;">{bar_chart_svg}최근 8주 출석 현황</div>
 ''', unsafe_allow_html=True)
 
 # 스택 바 차트 데이터
@@ -409,7 +409,7 @@ if stacked_data:
         x=weeks, y=children_data, name='어린이부',
         marker_color='#D2691E', marker_line_width=0,
         text=children_data, textposition='inside',
-        textfont=dict(color='white', size=9),
+        textfont=dict(color='white', size=12),
         insidetextanchor='middle'
     ))
     # 청소년부 - 숫자 내부 표시
@@ -417,7 +417,7 @@ if stacked_data:
         x=weeks, y=teens_data, name='청소년부',
         marker_color='#6B8E23', marker_line_width=0,
         text=teens_data, textposition='inside',
-        textfont=dict(color='white', size=9),
+        textfont=dict(color='white', size=12),
         insidetextanchor='middle'
     ))
     # 청년부 - 숫자 내부 표시
@@ -425,7 +425,7 @@ if stacked_data:
         x=weeks, y=youth_data, name='청년부',
         marker_color='#556B82', marker_line_width=0,
         text=youth_data, textposition='inside',
-        textfont=dict(color='white', size=9),
+        textfont=dict(color='white', size=12),
         insidetextanchor='middle'
     ))
     # 장년부 (맨 위) - 숫자 내부 표시
@@ -433,7 +433,7 @@ if stacked_data:
         x=weeks, y=adults_data, name='장년부',
         marker_color='#6B5B47', marker_line_width=0,
         text=adults_data, textposition='inside',
-        textfont=dict(color='white', size=9),
+        textfont=dict(color='white', size=12),
         insidetextanchor='middle'
     ))
 
@@ -442,7 +442,7 @@ if stacked_data:
         x=weeks, y=totals, mode='text',
         text=[str(t) for t in totals],
         textposition='top center',
-        textfont=dict(color='#2C3E50', size=12, weight='bold'),
+        textfont=dict(color='#2C3E50', size=13, weight='bold'),
         showlegend=False
     ))
 
@@ -450,8 +450,8 @@ if stacked_data:
         barmode='stack',
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=0, r=0, t=30, b=40),  # 합계 표시 위해 상단 마진 증가
-        height=300,
+        margin=dict(l=0, r=0, t=30, b=40),
+        height=380,  # 높이 증가 (공백 축소한 만큼)
         showlegend=False,
         barcornerradius=4,
         dragmode=False,  # 드래그 줌 비활성화
