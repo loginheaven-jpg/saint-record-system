@@ -144,23 +144,23 @@ def fetch_dashboard_data_from_api(base_date: str):
             print(f"[ERROR] get_8week_dept_attendance failed: {e}")
             data['stacked_chart_data'] = []
 
-        # 9. 부서별 통계 (부서 카드용)
+        # 9. 부서별 통계 (부서 카드용) - 선택된 날짜 기준
         try:
-            data['dept_stats'] = api.get_dept_stats()
-            print(f"[DEBUG] dept_stats loaded: {len(data['dept_stats'])} departments")
+            data['dept_stats'] = api.get_dept_stats(base_date)
+            print(f"[DEBUG] dept_stats loaded: {len(data['dept_stats'])} departments (base_date={base_date})")
         except Exception as e:
             print(f"[ERROR] get_dept_stats failed: {e}")
             data['dept_stats'] = []
 
-        # 10. 부서별 8주 트렌드 (팝오버 미니차트용)
+        # 10. 부서별 8주 트렌드 (팝오버 미니차트용) - 선택된 날짜 기준
         try:
             dept_trends = {}
             for dept in data['dept_stats']:
                 dept_id = dept.get('dept_id', '')
                 if dept_id:
-                    dept_trends[dept_id] = api.get_dept_attendance_trend(dept_id)
+                    dept_trends[dept_id] = api.get_dept_attendance_trend(dept_id, base_date)
             data['dept_trends'] = dept_trends
-            print(f"[DEBUG] dept_trends loaded: {len(dept_trends)} departments")
+            print(f"[DEBUG] dept_trends loaded: {len(dept_trends)} departments (base_date={base_date})")
         except Exception as e:
             print(f"[ERROR] get_dept_attendance_trend failed: {e}")
             data['dept_trends'] = {}
@@ -291,15 +291,15 @@ with col_date:
     # 일요일이 아닌 날짜 선택 시 가장 가까운 일요일로 조정
     new_sunday = selected_date if selected_date.weekday() == 6 else get_nearest_sunday(selected_date)
 
-    # 날짜 변경 감지 시 모든 캐시 클리어
+    # 날짜 변경 감지 (캐시 클리어 없이 화면만 갱신)
+    # 24시간 캐시된 전체 데이터에서 날짜별로 필터링하므로 API 호출 없음
     if new_sunday != st.session_state.selected_sunday:
         st.session_state.selected_sunday = new_sunday
-        # 모든 캐시 완전 클리어
-        fetch_dashboard_data_from_api.clear()
-        clear_sheets_cache()  # sheets_api 캐시도 클리어
-        st.session_state['dashboard_data_loaded'] = False
-        st.session_state['dashboard_cache_time'] = 0
         st.rerun()
+
+    # 일요일 아닌 날짜 선택 시 안내 메시지
+    if selected_date.weekday() != 6:
+        st.caption(f"⚠️ {new_sunday.strftime('%m/%d')}(일)로 조정됨")
 
 with col_refresh:
     # 캐시 시간 표시
@@ -474,6 +474,39 @@ if 'selected_dept' not in st.session_state:
 # 부서 카드 그리드 (클릭 가능한 통합 UI)
 dept_stats = dashboard_data.get('dept_stats', [])
 dept_trends = dashboard_data.get('dept_trends', {})
+
+# 부서 버튼 색상 매핑 (차트 색상과 일치)
+DEPT_COLORS = {
+    'adults': '#6B5B47',    # 장년부
+    'youth': '#556B82',     # 청년부
+    'teens': '#6B8E23',     # 청소년부
+    'children': '#D2691E',  # 어린이부
+}
+
+# 부서 버튼 커스텀 CSS (선택 시 부서 색상 적용)
+# 부서 인덱스와 색상을 매핑하여 nth-child 선택자 사용
+selected_dept = st.session_state.get('selected_dept', '')
+selected_idx = None
+selected_color = '#C9A962'
+
+for i, dept in enumerate(dept_stats):
+    if dept.get('dept_id', '') == selected_dept:
+        selected_idx = i + 1  # CSS nth-child는 1부터 시작
+        css_class = dept.get('css_class', 'adults')
+        selected_color = DEPT_COLORS.get(css_class, '#C9A962')
+        break
+
+if selected_idx is not None:
+    dept_btn_css = f"""
+    <style>
+    /* 부서 버튼 색상 - 선택된 부서만 해당 색상 적용 */
+    section.main [data-testid="stHorizontalBlock"]:has(button[kind="primary"]) > div:nth-child({selected_idx}) button[kind="primary"] {{
+        background-color: {selected_color} !important;
+        border-color: {selected_color} !important;
+    }}
+    </style>
+    """
+    st.markdown(dept_btn_css, unsafe_allow_html=True)
 
 if dept_stats:
     # 부서 수에 따라 컬럼 생성 (기본 4개)

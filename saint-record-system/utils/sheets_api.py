@@ -67,9 +67,9 @@ def _get_gspread_client():
     return gspread.authorize(creds)
 
 
-@st.cache_data(ttl=300, show_spinner=False)  # 5분 캐시
+@st.cache_data(ttl=86400, show_spinner=False)  # 24시간 캐시 (어드민 수동 새로고침 시 클리어)
 def _cached_get_sheet_data(sheet_name: str) -> List[Dict]:
-    """시트 데이터 캐시 (5분 TTL)"""
+    """시트 데이터 캐시 (24시간 TTL) - Members, Departments, Groups"""
     try:
         client = _get_gspread_client()
         spreadsheet = client.open_by_key(SHEET_ID)
@@ -105,9 +105,9 @@ def clear_sheets_cache():
     _cached_get_attendance_data.clear()
 
 
-@st.cache_data(ttl=300, show_spinner=False)  # 5분 캐시
+@st.cache_data(ttl=86400, show_spinner=False)  # 24시간 캐시 (어드민 수동 새로고침 시 클리어)
 def _cached_get_attendance_data(year: int) -> List[Dict]:
-    """출석 시트 데이터 캐시 (5분 TTL) - API 429 에러 방지"""
+    """출석 시트 데이터 캐시 (24시간 TTL) - 전체 연도 출석 데이터"""
     sheet_name = f'Attendance_{year}'
     try:
         client = _get_gspread_client()
@@ -699,9 +699,13 @@ class SheetsAPI:
 
         return results
 
-    def get_dept_stats(self) -> List[Dict]:
+    def get_dept_stats(self, base_date: Optional[str] = None) -> List[Dict]:
         """
         부서별 통계 (부서 카드용)
+
+        Args:
+            base_date: 기준 날짜 (YYYY-MM-DD, 일요일). None이면 오늘 기준 최근 일요일
+
         Returns: [
             {
                 "dept_id": "1",
@@ -735,11 +739,14 @@ class SheetsAPI:
         # 출석 성도 (대시보드 기준)
         members = self.get_members({'status': '출석'})
 
-        # 최근 일요일
-        now = pd.Timestamp.now()
-        days_since_sunday = (now.weekday() + 1) % 7
-        last_sunday = now - pd.Timedelta(days=days_since_sunday)
-        last_sunday_str = last_sunday.strftime('%Y-%m-%d')
+        # 기준 날짜 설정 (선택한 날짜 또는 오늘 기준 최근 일요일)
+        if base_date:
+            last_sunday_str = base_date
+        else:
+            now = pd.Timestamp.now()
+            days_since_sunday = (now.weekday() + 1) % 7
+            last_sunday = now - pd.Timedelta(days=days_since_sunday)
+            last_sunday_str = last_sunday.strftime('%Y-%m-%d')
 
         year = int(last_sunday_str[:4])
         attendance = self.get_attendance(year, date=last_sunday_str)
@@ -794,14 +801,23 @@ class SheetsAPI:
 
         return results
 
-    def get_dept_attendance_trend(self, dept_id: str) -> List[int]:
+    def get_dept_attendance_trend(self, dept_id: str, base_date: Optional[str] = None) -> List[int]:
         """
         부서별 8주 출석률 트렌드 (팝오버 미니차트용)
-        Returns: [80, 82, 76, 79, 81, 78, 80, 83]  # 8주 출석률 %
+
+        Args:
+            dept_id: 부서 ID
+            base_date: 기준 날짜 (YYYY-MM-DD, 일요일). None이면 오늘 기준 최근 일요일
+
+        Returns: [80, 82, 76, 79, 81, 78, 80, 83]  # 8주 출석률 % (과거→최근)
         """
-        now = pd.Timestamp.now()
-        days_since_sunday = (now.weekday() + 1) % 7
-        last_sunday = now - pd.Timedelta(days=days_since_sunday)
+        # 기준 날짜 설정
+        if base_date:
+            last_sunday = pd.Timestamp(base_date)
+        else:
+            now = pd.Timestamp.now()
+            days_since_sunday = (now.weekday() + 1) % 7
+            last_sunday = now - pd.Timedelta(days=days_since_sunday)
 
         # 출석 성도 (대시보드 기준)
         members = self.get_members({'status': '출석'})
@@ -892,9 +908,9 @@ class SheetsAPI:
         """
         base = pd.Timestamp(base_date)
 
-        # 8주 일요일 날짜 계산 (최근 → 과거)
+        # 8주 일요일 날짜 계산 (과거 → 최근, 선택 날짜가 우측에 표시)
         weeks = []
-        for i in range(8):
+        for i in range(7, -1, -1):  # 7주 전부터 선택 날짜까지
             sunday = base - pd.Timedelta(weeks=i)
             weeks.append({
                 'date': sunday.strftime('%Y-%m-%d'),
