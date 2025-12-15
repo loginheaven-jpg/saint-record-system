@@ -486,6 +486,7 @@ if db_connected:
 
             # 테이블 HTML 생성
             table_html = """
+            <div class="scroll-wrapper">
             <div class="table-container">
             <table class="member-table">
             <thead>
@@ -557,31 +558,55 @@ if db_connected:
             </tbody>
             </table>
             </div>
+            </div>
             """
 
             # CSS를 포함한 완전한 HTML로 렌더링 (raw 태그 표시 방지)
             table_css = """
             <style>
+            * { box-sizing: border-box; }
             html, body {
                 margin: 0;
                 padding: 0;
                 font-family: 'Noto Sans KR', sans-serif;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+            }
+            .scroll-wrapper {
+                width: 100%;
+                height: 100%;
                 overflow-x: auto;
-                overflow-y: hidden;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .scroll-wrapper::-webkit-scrollbar {
+                height: 10px;
+                width: 8px;
+            }
+            .scroll-wrapper::-webkit-scrollbar-track {
+                background: #f1f1f1;
+                border-radius: 4px;
+            }
+            .scroll-wrapper::-webkit-scrollbar-thumb {
+                background: #C9A962;
+                border-radius: 4px;
+            }
+            .scroll-wrapper::-webkit-scrollbar-thumb:hover {
+                background: #8B7355;
             }
             .table-container {
                 background: white;
                 border-radius: 12px;
                 box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-                overflow-x: scroll;
-                overflow-y: auto;
-                width: 100%;
+                display: inline-block;
+                min-width: 100%;
             }
             .member-table {
-                width: 100%;
                 border-collapse: collapse;
                 font-size: 12px;
                 min-width: 1400px;
+                width: max-content;
             }
             .member-table thead {
                 background: #F8F6F3;
