@@ -10,7 +10,7 @@ from utils.ui import (
     load_custom_css, render_stat_card, render_dept_item,
     render_alert_item, render_chart_legend,
     render_dept_chart_legend, render_dept_card, render_group_grid,
-    render_attendance_table, get_attendance_table_css
+    get_attendance_table_css
 )
 
 
@@ -184,7 +184,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.2"  # 버전 변경 시 캐시 자동 클리어 (버그 수정: API 429, 캐시 갱신, UI 일원화)
+APP_VERSION = "v3.3"  # 버전 변경 시 캐시 자동 클리어 (출석 테이블 클릭 편집 기능 추가)
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -617,7 +617,7 @@ if dept_stats:
                 st.markdown('</div>', unsafe_allow_html=True)
 
                 # ============================================================
-                # 출석 현황 테이블 (B: 별도 섹션)
+                # 출석 현황 테이블 (편집 가능)
                 # ============================================================
                 st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
@@ -637,11 +637,103 @@ if dept_stats:
                                 selected_group_name = g.get('name')
                                 break
 
-                    # 출석 테이블 렌더링
-                    st.markdown(
-                        render_attendance_table(attendance_table_data, selected_dept_name, selected_group_name),
-                        unsafe_allow_html=True
-                    )
+                    weeks = attendance_table_data.get('weeks', [])
+                    week_dates = attendance_table_data.get('week_dates', [])
+                    members_data = attendance_table_data.get('members', [])
+
+                    if members_data:
+                        title = f"{selected_group_name} 출석 현황" if selected_group_name else f"{selected_dept_name} 출석 현황"
+
+                        # 출석률 계산
+                        total_checks = len(members_data) * len(weeks)
+                        present_checks = sum(sum(m.get('attendance', [])) for m in members_data)
+                        rate = round((present_checks / total_checks) * 100, 1) if total_checks > 0 else 0
+
+                        st.markdown(f'''<div class="attendance-table-section">
+                            <div class="attendance-table-header">
+                                <span class="attendance-table-title">📋 {title} (최근 8주)</span>
+                                <span class="attendance-table-stat">평균 출석률: <strong>{rate}%</strong> ({present_checks}/{total_checks}) | 셀을 클릭하여 출석 수정</span>
+                            </div>
+                        ''', unsafe_allow_html=True)
+
+                        # DataFrame 구성 (편집용)
+                        df_data = []
+                        for m in members_data:
+                            row = {
+                                'member_id': m['member_id'],  # hidden, for API call
+                                '이름': m['name'],
+                                '목장': m['group_name'],
+                            }
+                            # 각 주차별 출석 상태 (체크박스 형태)
+                            for i, week_label in enumerate(weeks):
+                                row[week_label] = bool(m['attendance'][i])
+                            df_data.append(row)
+
+                        df = pd.DataFrame(df_data)
+
+                        # 원본 데이터 저장 (변경 감지용)
+                        original_key = f"original_attendance_{st.session_state.selected_dept}_{st.session_state.selected_group}"
+                        if original_key not in st.session_state:
+                            st.session_state[original_key] = df.copy()
+
+                        # 편집 가능한 테이블
+                        column_config = {
+                            'member_id': None,  # 숨김
+                            '이름': st.column_config.TextColumn('이름', disabled=True, width='medium'),
+                            '목장': st.column_config.TextColumn('목장', disabled=True, width='small'),
+                        }
+                        # 주차 컬럼은 체크박스로
+                        for week_label in weeks:
+                            column_config[week_label] = st.column_config.CheckboxColumn(
+                                week_label,
+                                width='small',
+                                help=f'{week_label} 출석 여부 (클릭하여 변경)'
+                            )
+
+                        edited_df = st.data_editor(
+                            df,
+                            column_config=column_config,
+                            hide_index=True,
+                            use_container_width=True,
+                            key=f"attendance_editor_{st.session_state.selected_dept}_{st.session_state.selected_group}"
+                        )
+
+                        # 변경 감지 및 저장
+                        original_df = st.session_state[original_key]
+                        changes_made = False
+
+                        for idx, row in edited_df.iterrows():
+                            member_id = row['member_id']
+                            for i, week_label in enumerate(weeks):
+                                original_val = original_df.loc[idx, week_label] if idx < len(original_df) else None
+                                new_val = row[week_label]
+
+                                if original_val is not None and original_val != new_val:
+                                    # 출석 상태 변경 감지
+                                    attend_date = week_dates[i]
+                                    try:
+                                        result = api.toggle_attendance(member_id, attend_date)
+                                        if result.get('success'):
+                                            changes_made = True
+                                    except Exception as toggle_err:
+                                        st.error(f"출석 변경 실패: {toggle_err}")
+
+                        if changes_made:
+                            # 원본 데이터 업데이트 및 캐시 클리어
+                            st.session_state[original_key] = edited_df.copy()
+                            fetch_dashboard_data_from_api.clear()
+                            st.toast("✅ 출석 정보가 저장되었습니다.", icon="✅")
+                            st.rerun()
+
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    else:
+                        st.markdown(f'''<div class="attendance-table-section">
+                            <div class="attendance-table-header">
+                                <span class="attendance-table-title">📋 {selected_dept_name} 출석 현황</span>
+                            </div>
+                            <p style="color:#6B7B8C;font-size:14px;text-align:center;padding:40px;">출석 데이터가 없습니다</p>
+                        </div>''', unsafe_allow_html=True)
+
                 except Exception as e:
                     st.markdown(f'<div class="attendance-table-section"><p style="color:#6B7B8C;font-size:14px;text-align:center;padding:40px;">출석 데이터를 불러올 수 없습니다: {e}</p></div>', unsafe_allow_html=True)
 

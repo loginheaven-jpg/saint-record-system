@@ -342,7 +342,77 @@ class SheetsAPI:
             'deleted': deleted_count,
             'inserted': inserted_count
         }
-    
+
+    def toggle_attendance(self, member_id: str, attend_date: str) -> Dict:
+        """
+        출석 상태 토글 (출석 ↔ 결석)
+        대시보드에서 클릭으로 출석 수정할 때 사용
+
+        Args:
+            member_id: 성도 ID
+            attend_date: 출석 날짜 (YYYY-MM-DD)
+
+        Returns:
+            {'success': True, 'new_status': '1' or '0', 'action': 'created' or 'updated' or 'deleted'}
+        """
+        from datetime import datetime
+        from .enums import AttendType
+
+        year = int(attend_date[:4])
+        date_obj = datetime.strptime(attend_date, '%Y-%m-%d')
+        # 주차 계산 (ISO week number)
+        week_no = date_obj.isocalendar()[1]
+
+        sheet_name = f'Attendance_{year}'
+
+        try:
+            sheet = self.get_sheet(sheet_name)
+        except:
+            # 시트 없으면 생성
+            sheet = self.spreadsheet.add_worksheet(sheet_name, 10000, 10)
+            headers = ['attend_id', 'member_id', 'attend_date',
+                      'attend_type', 'year', 'week_no']
+            sheet.append_row(headers)
+
+        # 현재 출석 상태 조회
+        all_data = sheet.get_all_records()
+        existing_row = None
+        existing_row_num = None
+
+        for i, row in enumerate(all_data):
+            if row.get('member_id') == member_id and row.get('attend_date') == attend_date:
+                existing_row = row
+                existing_row_num = i + 2  # 헤더가 1행
+                break
+
+        if existing_row:
+            current_status = str(existing_row.get('attend_type', '0'))
+            if current_status in ('1', '2'):  # 출석/온라인 → 결석
+                # 행 삭제 (결석은 레코드 없음으로 처리)
+                sheet.delete_rows(existing_row_num)
+                # 캐시 클리어
+                _cached_get_attendance_data.clear()
+                return {'success': True, 'new_status': '0', 'action': 'deleted'}
+            else:  # 결석 → 출석
+                # attend_type을 1로 업데이트
+                sheet.update_cell(existing_row_num, 4, '1')  # attend_type 컬럼
+                _cached_get_attendance_data.clear()
+                return {'success': True, 'new_status': '1', 'action': 'updated'}
+        else:
+            # 레코드 없음 = 결석 → 출석으로 생성
+            attend_id = f"AT{year}_W{week_no:02d}_{member_id}"
+            new_row = [
+                attend_id,
+                member_id,
+                attend_date,
+                '1',  # 출석
+                year,
+                week_no
+            ]
+            sheet.append_row(new_row)
+            _cached_get_attendance_data.clear()
+            return {'success': True, 'new_status': '1', 'action': 'created'}
+
     # ===== 기타 =====
     
     def get_departments(self) -> pd.DataFrame:
@@ -560,12 +630,13 @@ class SheetsAPI:
             for i in range(3)
         ]
 
-        year = int(sundays[0][:4])
         absent_candidates = {}
 
         for member_id in members['member_id'].tolist():
             absent_count = 0
             for sunday in sundays:
+                # 각 주마다 연도 추출 (연도 경계 처리)
+                year = int(sunday[:4])
                 attendance = self.get_attendance(year, date=sunday, member_ids=[member_id])
                 if attendance.empty:
                     absent_count += 1
@@ -981,5 +1052,6 @@ class SheetsAPI:
 
         return {
             'weeks': [w['label'] for w in weeks],
+            'week_dates': [w['date'] for w in weeks],  # 전체 날짜 (YYYY-MM-DD) - 편집용
             'members': result_members
         }
