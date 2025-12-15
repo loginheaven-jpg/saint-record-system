@@ -9,7 +9,7 @@ from utils.sheets_api import SheetsAPI, clear_sheets_cache
 from utils.ui import (
     load_custom_css, render_stat_card, render_dept_item,
     render_alert_item, render_chart_legend,
-    render_dept_chart_legend, render_dept_card, render_group_grid,
+    render_dept_chart_legend, render_dept_card,
     get_attendance_table_css
 )
 
@@ -184,7 +184,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.3"  # 버전 변경 시 캐시 자동 클리어 (출석 테이블 클릭 편집 기능 추가)
+APP_VERSION = "v3.4"  # status 필터 수정, member_type 필터 추가, 목장 UI 개선
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -587,34 +587,33 @@ if dept_stats:
                     break
 
             if groups:
-                st.markdown(render_group_grid(groups, selected_dept_name), unsafe_allow_html=True)
+                # 목장 섹션 헤더
+                group_label = "반" if selected_dept_name == "어린이부" else "목장"
+                total_members = sum(g.get('members_count', 0) for g in groups)
+                st.markdown(f'''<div class="groups-section">
+                    <div class="groups-title">선택된 부서의 {group_label} ({selected_dept_name})</div>
+                </div>''', unsafe_allow_html=True)
 
-                # 목장 선택 버튼 (전체 + 개별 목장)
-                st.markdown('<div style="margin-top:16px;">', unsafe_allow_html=True)
+                # 전체 + 목장 버튼 그리드 (4열)
+                cols_per_row = 4
+                all_items = [{'group_id': None, 'name': '전체', 'members_count': total_members}] + groups
 
-                # 전체 보기 + 목장 버튼들
-                num_cols = min(len(groups) + 1, 6)  # 최대 6개 컬럼
-                group_cols = st.columns(num_cols)
+                for row_start in range(0, len(all_items), cols_per_row):
+                    cols = st.columns(cols_per_row)
+                    for col_idx, item in enumerate(all_items[row_start:row_start + cols_per_row]):
+                        with cols[col_idx]:
+                            group_id = item.get('group_id')
+                            group_name = item.get('name', '')
+                            members_count = item.get('members_count', 0)
+                            is_selected = (st.session_state.selected_group == group_id)
 
-                # 전체 보기 버튼
-                with group_cols[0]:
-                    btn_label = "📋 전체" if st.session_state.selected_group is None else "전체"
-                    if st.button(btn_label, key="group_btn_all", use_container_width=True):
-                        st.session_state.selected_group = None
-                        st.rerun()
+                            # 선택된 목장 스타일
+                            btn_type = "primary" if is_selected else "secondary"
+                            btn_label = f"{group_name} ({members_count})"
 
-                # 개별 목장 버튼
-                for i, group in enumerate(groups[:num_cols-1]):
-                    with group_cols[i + 1]:
-                        group_id = group.get('group_id', '')
-                        group_name = group.get('name', '')
-                        is_selected = (st.session_state.selected_group == group_id)
-                        btn_label = f"📍 {group_name}" if is_selected else group_name
-                        if st.button(btn_label, key=f"group_btn_{group_id}", use_container_width=True):
-                            st.session_state.selected_group = group_id
-                            st.rerun()
-
-                st.markdown('</div>', unsafe_allow_html=True)
+                            if st.button(btn_label, key=f"group_btn_{group_id}", use_container_width=True, type=btn_type):
+                                st.session_state.selected_group = group_id
+                                st.rerun()
 
                 # ============================================================
                 # 출석 현황 테이블 (편집 가능)

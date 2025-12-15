@@ -193,6 +193,12 @@ class SheetsAPI:
                 df = df[df['group_id'] == filters['group_id']]
             if filters.get('status'):
                 df = df[df['status'] == filters['status']]
+            if filters.get('member_type'):
+                types = filters['member_type']
+                if isinstance(types, list):
+                    df = df[df['member_type'].isin(types)]
+                else:
+                    df = df[df['member_type'] == types]
             if filters.get('search'):
                 df = df[df['name'].str.contains(filters['search'], na=False)]
 
@@ -582,10 +588,13 @@ class SheetsAPI:
 
     def get_new_members_this_month(self) -> Dict:
         """
-        이번 달 신규 등록 성도 수
+        이번 달 신규 등록 성도 수 (출석 중인 재적교인 기준)
         Returns: {'count': 3, 'last_month_count': 5}
         """
-        members = self.get_members({'status': '재적'})
+        members = self.get_members({
+            'status': '출석',
+            'member_type': ['등록교인', '회원교인']
+        })
         if members.empty:
             return {'count': 0, 'last_month_count': 0}
 
@@ -612,7 +621,7 @@ class SheetsAPI:
 
     def get_3week_absent_members(self) -> List[Dict]:
         """
-        3주 연속 결석 성도 목록
+        3주 연속 결석 성도 목록 (출석 중인 재적교인 기준)
         Returns: [{'member_id': 'M001', 'name': '홍길동', 'weeks_absent': 3}, ...]
         """
         now = pd.Timestamp.now()
@@ -620,7 +629,10 @@ class SheetsAPI:
         days_since_sunday = (now.weekday() + 1) % 7
         last_sunday = now - pd.Timedelta(days=days_since_sunday)
 
-        members = self.get_members({'status': '재적'})
+        members = self.get_members({
+            'status': '출석',
+            'member_type': ['등록교인', '회원교인']
+        })
         if members.empty:
             return []
 
@@ -657,10 +669,13 @@ class SheetsAPI:
 
     def get_birthdays_this_week(self) -> List[Dict]:
         """
-        이번 주 생일 성도 목록
+        이번 주 생일 성도 목록 (출석 중인 재적교인 기준)
         Returns: [{'member_id': 'M001', 'name': '홍길동', 'birth_date': '12/15'}, ...]
         """
-        members = self.get_members({'status': '재적'})
+        members = self.get_members({
+            'status': '출석',
+            'member_type': ['등록교인', '회원교인']
+        })
         if members.empty:
             return []
 
