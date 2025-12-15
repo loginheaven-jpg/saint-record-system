@@ -184,7 +184,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.11"  # 알림 팝업 수정, 미니차트 리사이징, 성도관리 스크롤/세부화면/주소자동입력
+APP_VERSION = "v3.12"  # 알림 배지 완전 재구현 (Material Icons 의존성 제거)
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -298,49 +298,112 @@ with col_date:
         st.caption(f"⚠️ {new_sunday.strftime('%m/%d')}(일)로 조정됨")
 
 with col_alerts:
-    # 알림 배지 (결석자, 생일자) - st.popover 사용
+    # 알림 배지 (결석자, 생일자) - 커스텀 HTML 배지
     absent_list = dashboard_data.get('absent_3weeks', [])
     birthdays = dashboard_data.get('birthdays', [])
+    absent_count = len(absent_list)
+    bday_count = len(birthdays)
 
-    alert_cols = st.columns(2)
+    # 결석자 상세 목록 생성
+    absent_detail = ""
+    if absent_count > 0:
+        dept_absent = {}
+        for m in absent_list:
+            dept = m.get('dept_name', '기타')
+            if dept not in dept_absent:
+                dept_absent[dept] = []
+            dept_absent[dept].append(m['name'])
+        for dept, names in dept_absent.items():
+            absent_detail += f"<div style='margin-bottom:4px;'><strong>{dept}</strong> ({len(names)}명): {', '.join(names)}</div>"
 
-    # 3주 연속 결석자
-    with alert_cols[0]:
-        absent_count = len(absent_list)
-        if absent_count > 0:
-            with st.popover(f"⚠️ 3주 연속 결석 {absent_count}명"):
-                st.markdown("**3주 연속 결석 성도**")
-                # 부서별로 그룹핑
-                dept_absent = {}
-                for m in absent_list:
-                    dept = m.get('dept_name', '기타')
-                    if dept not in dept_absent:
-                        dept_absent[dept] = []
-                    dept_absent[dept].append(m['name'])
-                for dept, names in dept_absent.items():
-                    st.markdown(f"**{dept}** ({len(names)}명)")
-                    st.caption(', '.join(names))
-        else:
-            st.markdown('<div style="font-size:12px;color:#4A9B7F;padding:8px 0;">✓ 3주 연속 결석 없음</div>', unsafe_allow_html=True)
+    # 생일자 상세 목록 생성
+    bday_detail = ""
+    if bday_count > 0:
+        dept_bday = {}
+        for b in birthdays:
+            dept = b.get('dept_name', '기타')
+            if dept not in dept_bday:
+                dept_bday[dept] = []
+            dept_bday[dept].append(f"{b['name']} ({b['birth_date']})")
+        for dept, names in dept_bday.items():
+            bday_detail += f"<div style='margin-bottom:4px;'><strong>{dept}</strong> ({len(names)}명): {', '.join(names)}</div>"
 
-    # 이번 주 생일자
-    with alert_cols[1]:
-        bday_count = len(birthdays)
-        if bday_count > 0:
-            with st.popover(f"🎂 금주 생일 {bday_count}명"):
-                st.markdown("**이번 주 생일 성도**")
-                # 부서별로 그룹핑
-                dept_bday = {}
-                for b in birthdays:
-                    dept = b.get('dept_name', '기타')
-                    if dept not in dept_bday:
-                        dept_bday[dept] = []
-                    dept_bday[dept].append(f"{b['name']} ({b['birth_date']})")
-                for dept, names in dept_bday.items():
-                    st.markdown(f"**{dept}** ({len(names)}명)")
-                    st.caption(', '.join(names))
-        else:
-            st.markdown('<div style="font-size:12px;color:#6B7B8C;padding:8px 0;">금주 생일 없음</div>', unsafe_allow_html=True)
+    # 알림 배지 HTML (클릭 가능한 토글 스타일)
+    alert_html = f'''
+    <style>
+    .alert-badge {{
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+        margin-right: 8px;
+    }}
+    .alert-badge.warning {{
+        background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+        color: #E65100;
+        border: 1px solid #FFB74D;
+    }}
+    .alert-badge.info {{
+        background: linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%);
+        color: #F57F17;
+        border: 1px solid #FFD54F;
+    }}
+    .alert-badge.success {{
+        background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+        color: #2E7D32;
+        border: 1px solid #81C784;
+    }}
+    .alert-badge:hover {{
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }}
+    .alert-container {{
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+    }}
+    </style>
+    <div class="alert-container">
+        <div class="alert-badge {'warning' if absent_count > 0 else 'success'}">
+            {'⚠️' if absent_count > 0 else '✓'} 3주 연속 결석 {absent_count}명
+        </div>
+        <div class="alert-badge {'info' if bday_count > 0 else 'success'}">
+            {'🎂' if bday_count > 0 else '✓'} 금주 생일 {bday_count}명
+        </div>
+    </div>
+    '''
+    st.markdown(alert_html, unsafe_allow_html=True)
+
+    # 상세 내용 토글 (버튼으로 제어)
+    if absent_count > 0 or bday_count > 0:
+        if st.button("📋 상세 보기", key="alert_detail_btn", type="secondary"):
+            st.session_state['show_alert_detail'] = not st.session_state.get('show_alert_detail', False)
+
+        if st.session_state.get('show_alert_detail', False):
+            detail_cols = st.columns(2)
+            with detail_cols[0]:
+                if absent_count > 0:
+                    st.markdown(f'''
+                    <div style="background:#FFF8E1;border-radius:12px;padding:14px;border-left:4px solid #E65100;">
+                        <div style="font-weight:700;color:#E65100;margin-bottom:8px;font-size:14px;">⚠️ 3주 연속 결석 ({absent_count}명)</div>
+                        <div style="font-size:12px;color:#5D4037;line-height:1.6;">{absent_detail}</div>
+                    </div>
+                    ''', unsafe_allow_html=True)
+            with detail_cols[1]:
+                if bday_count > 0:
+                    st.markdown(f'''
+                    <div style="background:#FFFDE7;border-radius:12px;padding:14px;border-left:4px solid #F57F17;">
+                        <div style="font-weight:700;color:#F57F17;margin-bottom:8px;font-size:14px;">🎂 금주 생일 ({bday_count}명)</div>
+                        <div style="font-size:12px;color:#5D4037;line-height:1.6;">{bday_detail}</div>
+                    </div>
+                    ''', unsafe_allow_html=True)
 
 with col_refresh:
     cache_time = st.session_state.get('dashboard_cache_time', 0)
