@@ -184,7 +184,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.4"  # status 필터 수정, member_type 필터 추가, 목장 UI 개선
+APP_VERSION = "v3.5"  # 부서 색상바, 출석 일괄저장 버튼, 8주 차트 정적화
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -399,37 +399,62 @@ if stacked_data:
     teens_data = [d['teens'] for d in stacked_data]
     children_data = [d['children'] for d in stacked_data]
 
+    # 합계 계산 (바 위에 표시용)
+    totals = [a + y + t + c for a, y, t, c in zip(adults_data, youth_data, teens_data, children_data)]
+
     fig = go.Figure()
 
-    # 어린이부 (맨 아래)
+    # 어린이부 (맨 아래) - 숫자 내부 표시
     fig.add_trace(go.Bar(
         x=weeks, y=children_data, name='어린이부',
-        marker_color='#D2691E', marker_line_width=0
+        marker_color='#D2691E', marker_line_width=0,
+        text=children_data, textposition='inside',
+        textfont=dict(color='white', size=9),
+        insidetextanchor='middle'
     ))
-    # 청소년부
+    # 청소년부 - 숫자 내부 표시
     fig.add_trace(go.Bar(
         x=weeks, y=teens_data, name='청소년부',
-        marker_color='#6B8E23', marker_line_width=0
+        marker_color='#6B8E23', marker_line_width=0,
+        text=teens_data, textposition='inside',
+        textfont=dict(color='white', size=9),
+        insidetextanchor='middle'
     ))
-    # 청년부
+    # 청년부 - 숫자 내부 표시
     fig.add_trace(go.Bar(
         x=weeks, y=youth_data, name='청년부',
-        marker_color='#556B82', marker_line_width=0
+        marker_color='#556B82', marker_line_width=0,
+        text=youth_data, textposition='inside',
+        textfont=dict(color='white', size=9),
+        insidetextanchor='middle'
     ))
-    # 장년부 (맨 위)
+    # 장년부 (맨 위) - 숫자 내부 표시
     fig.add_trace(go.Bar(
         x=weeks, y=adults_data, name='장년부',
-        marker_color='#6B5B47', marker_line_width=0
+        marker_color='#6B5B47', marker_line_width=0,
+        text=adults_data, textposition='inside',
+        textfont=dict(color='white', size=9),
+        insidetextanchor='middle'
+    ))
+
+    # 합계를 바 위에 표시 (scatter로 추가)
+    fig.add_trace(go.Scatter(
+        x=weeks, y=totals, mode='text',
+        text=[str(t) for t in totals],
+        textposition='top center',
+        textfont=dict(color='#2C3E50', size=12, weight='bold'),
+        showlegend=False
     ))
 
     fig.update_layout(
         barmode='stack',
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=0, r=0, t=10, b=40),
-        height=280,
+        margin=dict(l=0, r=0, t=30, b=40),  # 합계 표시 위해 상단 마진 증가
+        height=300,
         showlegend=False,
         barcornerradius=4,
+        dragmode=False,  # 드래그 줌 비활성화
         xaxis=dict(
             showgrid=False,
             showline=False,
@@ -445,7 +470,7 @@ if stacked_data:
         )
     )
 
-    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False, 'staticPlot': True})
 else:
     st.markdown('<p style="color:#6B7B8C;font-size:14px;text-align:center;padding:40px;">출석 데이터가 없습니다</p>', unsafe_allow_html=True)
 
@@ -496,17 +521,7 @@ for i, dept in enumerate(dept_stats):
         selected_color = DEPT_COLORS.get(css_class, '#C9A962')
         break
 
-if selected_idx is not None:
-    dept_btn_css = f"""
-    <style>
-    /* 부서 버튼 색상 - 선택된 부서만 해당 색상 적용 */
-    section.main [data-testid="stHorizontalBlock"]:has(button[kind="primary"]) > div:nth-child({selected_idx}) button[kind="primary"] {{
-        background-color: {selected_color} !important;
-        border-color: {selected_color} !important;
-    }}
-    </style>
-    """
-    st.markdown(dept_btn_css, unsafe_allow_html=True)
+# CSS 선택자 방식 제거 - 버튼 아래에 직접 색상 바 추가로 변경
 
 if dept_stats:
     # 부서 수에 따라 컬럼 생성 (기본 4개)
@@ -519,6 +534,10 @@ if dept_stats:
         trend_data = dept_trends.get(dept_id, [])
 
         with dept_cols[i]:
+            # 부서 고유 색상
+            css_class = dept.get('css_class', 'adults')
+            dept_color = DEPT_COLORS.get(css_class, '#C9A962')
+
             # 부서 선택 버튼 (클릭 가능)
             btn_type = "primary" if is_active else "secondary"
             if st.button(
@@ -530,6 +549,10 @@ if dept_stats:
                 st.session_state.selected_dept = dept_id
                 st.session_state.selected_group = None  # 부서 변경 시 목장 선택 초기화
                 st.rerun()
+
+            # 선택된 부서일 경우 부서 고유색 바 표시
+            if is_active:
+                st.markdown(f'<div style="height:4px;background:{dept_color};border-radius:2px;margin-top:-8px;margin-bottom:8px;"></div>', unsafe_allow_html=True)
 
             # 부서 통계 카드 (시각적 정보)
             groups_count = dept.get('groups_count', 0)
@@ -697,9 +720,9 @@ if dept_stats:
                             key=f"attendance_editor_{st.session_state.selected_dept}_{st.session_state.selected_group}"
                         )
 
-                        # 변경 감지 및 저장
+                        # 변경 사항 수집 (즉시 저장하지 않음)
                         original_df = st.session_state[original_key]
-                        changes_made = False
+                        pending_changes = []
 
                         for idx, row in edited_df.iterrows():
                             member_id = row['member_id']
@@ -708,23 +731,31 @@ if dept_stats:
                                 new_val = row[week_label]
 
                                 if original_val is not None and original_val != new_val:
-                                    # 출석 상태 변경 감지
-                                    attend_date = week_dates[i]
+                                    pending_changes.append({
+                                        'member_id': member_id,
+                                        'date': week_dates[i],
+                                        'new_val': new_val
+                                    })
+
+                        st.markdown('</div>', unsafe_allow_html=True)
+
+                        # 변경 사항이 있으면 저장 버튼 표시
+                        if pending_changes:
+                            if st.button(f"💾 {len(pending_changes)}건 저장", key="save_attendance_btn", type="primary", use_container_width=True):
+                                success_count = 0
+                                for change in pending_changes:
                                     try:
-                                        result = api.toggle_attendance(member_id, attend_date)
+                                        result = api.toggle_attendance(change['member_id'], change['date'])
                                         if result.get('success'):
-                                            changes_made = True
+                                            success_count += 1
                                     except Exception as toggle_err:
                                         st.error(f"출석 변경 실패: {toggle_err}")
 
-                        if changes_made:
-                            # 원본 데이터 업데이트 및 캐시 클리어
-                            st.session_state[original_key] = edited_df.copy()
-                            fetch_dashboard_data_from_api.clear()
-                            st.toast("✅ 출석 정보가 저장되었습니다.", icon="✅")
-                            st.rerun()
-
-                        st.markdown('</div>', unsafe_allow_html=True)
+                                if success_count > 0:
+                                    st.session_state[original_key] = edited_df.copy()
+                                    fetch_dashboard_data_from_api.clear()
+                                    st.toast(f"✅ {success_count}건 저장 완료", icon="✅")
+                                    st.rerun()
                     else:
                         st.markdown(f'''<div class="attendance-table-section">
                             <div class="attendance-table-header">
