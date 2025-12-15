@@ -184,7 +184,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.9"  # UI 개선: 바차트 회전방지, 알림 헤더이동, 부서카드 순서/라인차트
+APP_VERSION = "v3.10"  # UI 버그 수정: 알림 expander, 바차트 숫자표시, 미니차트 반응형, 테이블 렌더링
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -298,7 +298,7 @@ with col_date:
         st.caption(f"⚠️ {new_sunday.strftime('%m/%d')}(일)로 조정됨")
 
 with col_alerts:
-    # 알림 배지 (결석자, 생일자)
+    # 알림 배지 (결석자, 생일자) - st.expander 사용
     absent_list = dashboard_data.get('absent_3weeks', [])
     birthdays = dashboard_data.get('birthdays', [])
 
@@ -310,8 +310,7 @@ with col_alerts:
         if absent_count > 0:
             absent_names_short = ', '.join([m['name'] for m in absent_list[:2]])
             absent_extra = f" 외 {absent_count - 2}명" if absent_count > 2 else ""
-            with st.popover(f"⚠️ 결석 {absent_count}명"):
-                st.markdown("**3주 연속 결석자**")
+            with st.expander(f"⚠️ 3주 연속 결석 {absent_count}명", expanded=False):
                 # 부서별로 그룹핑
                 dept_absent = {}
                 for m in absent_list:
@@ -320,10 +319,10 @@ with col_alerts:
                         dept_absent[dept] = []
                     dept_absent[dept].append(m['name'])
                 for dept, names in dept_absent.items():
-                    st.markdown(f"**{dept}**: {', '.join(names)}")
-            st.markdown(f'<div style="font-size:11px;color:#E8985E;margin-top:-8px;">{absent_names_short}{absent_extra}</div>', unsafe_allow_html=True)
+                    st.markdown(f"**{dept}** ({len(names)}명): {', '.join(names)}")
+            st.markdown(f'<div style="font-size:10px;color:#E8985E;margin-top:-12px;">{absent_names_short}{absent_extra}</div>', unsafe_allow_html=True)
         else:
-            st.markdown('<div style="font-size:12px;color:#4A9B7F;">✓ 결석 없음</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size:12px;color:#4A9B7F;padding:8px 0;">✓ 3주 연속 결석 없음</div>', unsafe_allow_html=True)
 
     # 이번 주 생일자
     with alert_cols[1]:
@@ -331,8 +330,7 @@ with col_alerts:
         if bday_count > 0:
             bday_names_short = ', '.join([b['name'] for b in birthdays[:2]])
             bday_extra = f" 외 {bday_count - 2}명" if bday_count > 2 else ""
-            with st.popover(f"🎂 생일 {bday_count}명"):
-                st.markdown("**이번 주 생일**")
+            with st.expander(f"🎂 금주 생일 {bday_count}명", expanded=False):
                 # 부서별로 그룹핑
                 dept_bday = {}
                 for b in birthdays:
@@ -341,10 +339,10 @@ with col_alerts:
                         dept_bday[dept] = []
                     dept_bday[dept].append(f"{b['name']} ({b['birth_date']})")
                 for dept, names in dept_bday.items():
-                    st.markdown(f"**{dept}**: {', '.join(names)}")
-            st.markdown(f'<div style="font-size:11px;color:#C9A962;margin-top:-8px;">{bday_names_short}{bday_extra}</div>', unsafe_allow_html=True)
+                    st.markdown(f"**{dept}** ({len(names)}명): {', '.join(names)}")
+            st.markdown(f'<div style="font-size:10px;color:#C9A962;margin-top:-12px;">{bday_names_short}{bday_extra}</div>', unsafe_allow_html=True)
         else:
-            st.markdown('<div style="font-size:12px;color:#6B7B8C;">생일 없음</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size:12px;color:#6B7B8C;padding:8px 0;">금주 생일 없음</div>', unsafe_allow_html=True)
 
 with col_refresh:
     cache_time = st.session_state.get('dashboard_cache_time', 0)
@@ -495,7 +493,7 @@ if stacked_data:
         showlegend=False,
         barcornerradius=4,
         dragmode=False,
-        uniformtext=dict(minsize=10, mode='hide'),  # 텍스트 회전 방지
+        uniformtext=dict(minsize=8, mode='show'),  # 작은 바에도 텍스트 강제 표시
         xaxis=dict(
             showgrid=False,
             showline=False,
@@ -626,7 +624,7 @@ if dept_stats:
                         labels += f'<circle cx="{x}" cy="{y}" r="2" fill="{dept_color}"/>'
 
                 polyline = f'<polyline points="{" ".join(points)}" fill="none" stroke="{dept_color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
-                trend_chart = f'<svg width="{chart_width}" height="{chart_height + 10}" style="overflow:visible;">{polyline}{"".join(labels)}</svg>'
+                trend_chart = f'<svg width="100%" viewBox="0 0 {chart_width} {chart_height + 10}" preserveAspectRatio="xMidYMid meet" style="overflow:visible;max-height:{chart_height + 10}px;">{polyline}{"".join(labels)}</svg>'
             else:
                 trend_chart = '<div style="color:#6B7B8C;font-size:10px;">8주 트렌드</div>'
 

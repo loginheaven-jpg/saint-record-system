@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 from datetime import date
 from utils.ui import load_custom_css
@@ -558,7 +559,93 @@ if db_connected:
             </div>
             """
 
-            st.markdown(table_html, unsafe_allow_html=True)
+            # CSS를 포함한 완전한 HTML로 렌더링 (raw 태그 표시 방지)
+            table_css = """
+            <style>
+            body { margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; }
+            .table-container {
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+                overflow-x: auto;
+            }
+            .member-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 12px;
+                min-width: 1400px;
+            }
+            .member-table thead {
+                background: #F8F6F3;
+                position: sticky;
+                top: 0;
+                z-index: 10;
+            }
+            .member-table th {
+                padding: 12px 10px;
+                text-align: left;
+                font-weight: 600;
+                color: #2C3E50;
+                white-space: nowrap;
+                border-bottom: 2px solid #E0E0E0;
+                border-right: 1px solid #E8E4DF;
+            }
+            .member-table th:last-child { border-right: none; }
+            .member-table tbody tr {
+                border-bottom: 1px solid #E8E4DF;
+                transition: background-color 0.2s;
+                cursor: pointer;
+            }
+            .member-table tbody tr:hover {
+                background-color: #FFFBF0;
+            }
+            .member-table td {
+                padding: 10px;
+                border-right: 1px solid #E8E4DF;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 150px;
+            }
+            .member-table td:last-child { border-right: none; }
+            .member-table th:first-child,
+            .member-table td:first-child {
+                position: sticky;
+                left: 0;
+                background: white;
+                z-index: 9;
+                font-weight: 600;
+                border-right: 2px solid #C9A962;
+                min-width: 80px;
+            }
+            .member-table thead th:first-child {
+                background: #F8F6F3;
+                z-index: 11;
+            }
+            .member-table tbody tr:hover td:first-child {
+                background-color: #FFFBF0;
+            }
+            .badge {
+                display: inline-block;
+                padding: 3px 8px;
+                border-radius: 4px;
+                font-size: 11px;
+                font-weight: 600;
+                white-space: nowrap;
+            }
+            .badge-head { background: #C9A962; color: white; }
+            .badge-spouse { background: #556B82; color: white; }
+            .badge-child { background: #6B8E23; color: white; }
+            .badge-parent { background: #E8985E; color: white; }
+            .badge-other { background: #999; color: white; }
+            .badge-active { background: #E8F5E9; color: #2E7D32; }
+            .badge-inactive { background: #FFF3E0; color: #E65100; }
+            </style>
+            """
+            full_html = table_css + table_html
+            row_count = len(members)
+            table_height = min(600, 50 + row_count * 40)  # 헤더 50px + 행당 40px
+            components.html(full_html, height=table_height, scrolling=True)
 
             # 성도 선택 (Streamlit selectbox 방식)
             st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
