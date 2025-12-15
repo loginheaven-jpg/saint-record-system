@@ -1402,3 +1402,204 @@ def render_group_grid(groups: list, dept_name: str = "장년부") -> str:
 def render_section_title(icon_svg: str, title: str) -> str:
     """섹션 타이틀 (아이콘 + 제목)"""
     return f'''<div class="section-title">{icon_svg}{title}</div>'''
+
+
+def render_attendance_table(data: dict, dept_name: str, group_name: str = None) -> str:
+    """
+    출석 현황 테이블 HTML 렌더링
+
+    Args:
+        data: {"weeks": ["12/7", "11/30", ...], "members": [{"name": ..., "group_name": ..., "attendance": [1,0,...]}, ...]}
+        dept_name: 부서명
+        group_name: 목장명 (선택, None이면 부서 전체)
+    """
+    weeks = data.get('weeks', [])
+    members = data.get('members', [])
+
+    if not members:
+        return f'''<div class="attendance-table-section">
+            <div class="attendance-table-header">
+                <span class="attendance-table-title">📋 {dept_name} 출석 현황</span>
+            </div>
+            <p style="color:#6B7B8C;font-size:14px;text-align:center;padding:40px;">출석 데이터가 없습니다</p>
+        </div>'''
+
+    title = f"{group_name} 출석 현황" if group_name else f"{dept_name} 출석 현황"
+
+    # 테이블 헤더
+    header_cells = '<th>이름</th><th>목장</th>'
+    for w in weeks:
+        header_cells += f'<th>{w}</th>'
+
+    # 테이블 바디
+    body_rows = ''
+    for member in members:
+        name = member.get('name', '')
+        group = member.get('group_name', '-')
+        attendance = member.get('attendance', [])
+
+        cells = f'<td class="name-cell">{name}</td><td class="group-cell">{group}</td>'
+        for i, att in enumerate(attendance):
+            if att == 1:
+                cells += '<td class="att-cell att-present">✓</td>'
+            else:
+                cells += '<td class="att-cell att-absent">-</td>'
+
+        body_rows += f'<tr>{cells}</tr>'
+
+    # 출석 통계 (출석률)
+    total_checks = len(members) * len(weeks)
+    present_checks = sum(sum(m.get('attendance', [])) for m in members)
+    rate = round((present_checks / total_checks) * 100, 1) if total_checks > 0 else 0
+
+    return f'''<div class="attendance-table-section">
+        <div class="attendance-table-header">
+            <span class="attendance-table-title">📋 {title} (최근 8주)</span>
+            <span class="attendance-table-stat">평균 출석률: <strong>{rate}%</strong> ({present_checks}/{total_checks})</span>
+        </div>
+        <div class="attendance-table-wrapper">
+            <table class="attendance-table">
+                <thead>
+                    <tr>{header_cells}</tr>
+                </thead>
+                <tbody>
+                    {body_rows}
+                </tbody>
+            </table>
+        </div>
+    </div>'''
+
+
+def get_attendance_table_css() -> str:
+    """출석 테이블 전용 CSS"""
+    return '''
+    <style>
+    .attendance-table-section {
+        background: var(--color-surface, #FFFFFF);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 2px 20px rgba(44, 62, 80, 0.06);
+        margin-top: 24px;
+    }
+
+    .attendance-table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .attendance-table-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #2C3E50;
+    }
+
+    .attendance-table-stat {
+        font-size: 14px;
+        color: #6B7B8C;
+    }
+
+    .attendance-table-stat strong {
+        color: #4A9B7F;
+        font-weight: 700;
+    }
+
+    .attendance-table-wrapper {
+        overflow-x: auto;
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    .attendance-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        min-width: 600px;
+    }
+
+    .attendance-table thead {
+        position: sticky;
+        top: 0;
+        background: #F8F6F3;
+        z-index: 10;
+    }
+
+    .attendance-table th {
+        padding: 12px 8px;
+        text-align: center;
+        font-weight: 600;
+        color: #2C3E50;
+        border-bottom: 2px solid #E8E4DF;
+        white-space: nowrap;
+        font-size: 12px;
+    }
+
+    .attendance-table th:first-child,
+    .attendance-table th:nth-child(2) {
+        text-align: left;
+        min-width: 80px;
+    }
+
+    .attendance-table td {
+        padding: 10px 8px;
+        text-align: center;
+        border-bottom: 1px solid #E8E4DF;
+        color: #6B7B8C;
+    }
+
+    .attendance-table .name-cell {
+        text-align: left;
+        font-weight: 500;
+        color: #2C3E50;
+        white-space: nowrap;
+    }
+
+    .attendance-table .group-cell {
+        text-align: left;
+        font-size: 12px;
+        color: #8B7355;
+        white-space: nowrap;
+    }
+
+    .attendance-table .att-cell {
+        width: 45px;
+        font-weight: 600;
+    }
+
+    .attendance-table .att-present {
+        color: #4A9B7F;
+        background: rgba(74, 155, 127, 0.08);
+    }
+
+    .attendance-table .att-absent {
+        color: #D0D0D0;
+    }
+
+    .attendance-table tbody tr:hover {
+        background: #F8F6F3;
+    }
+
+    .attendance-table tbody tr:hover .att-present {
+        background: rgba(74, 155, 127, 0.15);
+    }
+
+    @media (max-width: 768px) {
+        .attendance-table-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .attendance-table {
+            font-size: 11px;
+        }
+
+        .attendance-table th,
+        .attendance-table td {
+            padding: 8px 4px;
+        }
+    }
+    </style>
+    '''

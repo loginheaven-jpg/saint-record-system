@@ -1,6 +1,7 @@
 
 import streamlit as st
 import datetime
+from datetime import date, timedelta
 import pandas as pd
 import plotly.graph_objects as go
 import time
@@ -8,8 +9,15 @@ from utils.sheets_api import SheetsAPI
 from utils.ui import (
     load_custom_css, render_stat_card, render_dept_item,
     render_alert_item, render_chart_legend,
-    render_dept_chart_legend, render_dept_card, render_group_grid
+    render_dept_chart_legend, render_dept_card, render_group_grid,
+    render_attendance_table, get_attendance_table_css
 )
+
+
+def get_nearest_sunday(d: date) -> date:
+    """주어진 날짜의 해당 주 일요일 반환 (일요일이면 그대로)"""
+    days_since_sunday = (d.weekday() + 1) % 7
+    return d - timedelta(days=days_since_sunday)
 
 # ============================================================
 # 1. 페이지 설정 (반드시 첫 번째로 실행)
@@ -39,8 +47,13 @@ if 'api' not in st.session_state:
         print(f"DB Connection Error: {str(e)}")
 
 @st.cache_data(ttl=86400, show_spinner=False)  # 24시간 캐시
-def fetch_dashboard_data_from_api():
-    """API에서 대시보드 데이터 조회 (캐시됨)"""
+def fetch_dashboard_data_from_api(base_date: str):
+    """
+    API에서 대시보드 데이터 조회 (캐시됨)
+
+    Args:
+        base_date: 기준 날짜 (YYYY-MM-DD, 일요일)
+    """
     data = {
         "total_members": 0,
         "current_attend": 0,
@@ -53,7 +66,7 @@ def fetch_dashboard_data_from_api():
         "mokjang_attendance": [],
         "absent_3weeks": [],
         "birthdays": [],
-        "last_sunday": "",
+        "last_sunday": base_date,
         # 새로 추가 (dashboard_v3 용)
         "stacked_chart_data": [],  # 8주 부서별 출석
         "dept_stats": [],          # 부서별 통계 (카드용)
@@ -63,26 +76,24 @@ def fetch_dashboard_data_from_api():
     try:
         api = SheetsAPI()
 
-        # 1. 전체 성도
-        df_members = api.get_members({'status': '재적'})
+        # 기준 날짜 파싱
+        last_sunday = pd.Timestamp(base_date)
+        last_sunday_str = base_date
+
+        # 1. 전체 성도 (status='출석')
+        df_members = api.get_members({'status': '출석'})
         data['total_members'] = len(df_members)
 
         # 2. 이번달 신규 등록
         data['new_members'] = api.get_new_members_this_month()
 
-        # 3. 출석 데이터 (최근 4주)
-        today = pd.Timestamp.today()
-        last_sunday = today - datetime.timedelta(days=today.weekday() + 1)
-        last_sunday_str = str(last_sunday.date())
-        data['last_sunday'] = last_sunday_str
-
-        # 금주 출석
+        # 3. 금주 출석 (선택된 날짜 기준)
         df_this = api.get_attendance(last_sunday.year, date=last_sunday_str)
         if not df_this.empty:
             data['current_attend'] = len(df_this[df_this['attend_type'].astype(str).isin(['1', '2'])])
 
         # 전주 출석
-        prev_sunday = last_sunday - datetime.timedelta(days=7)
+        prev_sunday = last_sunday - pd.Timedelta(days=7)
         df_prev = api.get_attendance(prev_sunday.year, date=str(prev_sunday.date()))
         if not df_prev.empty:
             data['last_week_attend'] = len(df_prev[df_prev['attend_type'].astype(str).isin(['1', '2'])])
@@ -92,7 +103,7 @@ def fetch_dashboard_data_from_api():
         attends = []
         totals = []
         for i in range(3, -1, -1):
-            d = last_sunday - datetime.timedelta(days=7*i)
+            d = last_sunday - pd.Timedelta(days=7*i)
             d_str = d.strftime('%Y-%m-%d')
             df_d = api.get_attendance(d.year, date=d_str)
             cnt = 0
@@ -123,7 +134,7 @@ def fetch_dashboard_data_from_api():
         except:
             data['birthdays'] = []
 
-        # ===== 새로 추가: dashboard_v3 용 데이터 =====
+        # ===== dashboard_v3 용 데이터 =====
 
         # 8. 8주 부서별 출석 (스택 바 차트용)
         try:
@@ -159,7 +170,7 @@ def fetch_dashboard_data_from_api():
 
     return data
 
-def get_dashboard_data(force_refresh=False):
+def get_dashboard_data(base_date: str, force_refresh=False):
     """대시보드 데이터 조회 (24시간 캐싱)"""
     if force_refresh:
         # 캐시 강제 삭제
@@ -170,15 +181,29 @@ def get_dashboard_data(force_refresh=False):
     if 'dashboard_cache_time' not in st.session_state:
         st.session_state['dashboard_cache_time'] = time.time()
 
-    return fetch_dashboard_data_from_api()
+    return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.0"  # 버전 변경 시 캐시 자동 클리어
+APP_VERSION = "v3.1"  # 버전 변경 시 캐시 자동 클리어
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
     fetch_dashboard_data_from_api.clear()
     print(f"[INFO] App version updated to {APP_VERSION}, cache cleared.")
+
+# ============================================================
+# 기준 날짜 설정 (일요일만 선택 가능)
+# ============================================================
+# 기본값: 오늘 기준 가장 최근 일요일
+today = date.today()
+default_sunday = get_nearest_sunday(today)
+
+# 세션에 선택된 날짜 저장
+if 'selected_sunday' not in st.session_state:
+    st.session_state.selected_sunday = default_sunday
+
+# 선택된 날짜 문자열
+selected_sunday_str = st.session_state.selected_sunday.strftime('%Y-%m-%d')
 
 # 강제 새로고침 처리
 force_refresh = st.session_state.get('force_refresh', False)
@@ -188,10 +213,10 @@ if force_refresh:
 # 로딩 표시 (데이터 로드 중)
 if 'dashboard_data_loaded' not in st.session_state:
     with st.spinner("📊 데이터를 불러오는 중..."):
-        dashboard_data = get_dashboard_data(force_refresh=True)  # 첫 로드는 항상 새로고침
+        dashboard_data = get_dashboard_data(selected_sunday_str, force_refresh=True)
         st.session_state['dashboard_data_loaded'] = True
 else:
-    dashboard_data = get_dashboard_data(force_refresh=force_refresh)
+    dashboard_data = get_dashboard_data(selected_sunday_str, force_refresh=force_refresh)
 
 # ============================================================
 # 4. 사이드바 렌더링 (Streamlit 네이티브 네비게이션 사용)
@@ -245,17 +270,35 @@ render_sidebar()
 # 5. 메인 컨텐츠 렌더링
 # ============================================================
 
+# 출석 테이블 CSS 로드
+st.markdown(get_attendance_table_css(), unsafe_allow_html=True)
+
 # 헤더
-col_title, col_date, col_refresh = st.columns([2.5, 1, 0.5])
+col_title, col_date, col_refresh = st.columns([2, 1.5, 0.5])
 
 with col_title:
     st.markdown('<h1 style="font-family:Playfair Display,serif;font-size:32px;font-weight:600;color:#2C3E50;margin:0 0 8px 0;">대시보드</h1><p style="font-size:14px;color:#6B7B8C;margin:0;">예봄교회 성도 현황을 한눈에 확인하세요</p>', unsafe_allow_html=True)
 
 with col_date:
-    today_formatted = datetime.date.today().strftime("%Y년 %m월 %d일")
-    calendar_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;color:#C9A962;"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>'
-    bell_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;color:#6B7B8C;"><path d="M18 8A6 6 0 106 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>'
-    st.markdown(f'<div style="display:flex;justify-content:flex-end;gap:12px;padding-top:8px;"><div style="background:#FFFFFF;padding:12px 20px;border-radius:12px;box-shadow:0 2px 20px rgba(44,62,80,0.06);display:flex;align-items:center;gap:10px;">{calendar_svg}<span style="font-size:14px;font-weight:500;color:#2C3E50;">{today_formatted}</span></div><div style="width:48px;height:48px;background:#FFFFFF;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 20px rgba(44,62,80,0.06);position:relative;cursor:pointer;">{bell_svg}<div style="position:absolute;top:10px;right:10px;width:10px;height:10px;background:#E8985E;border-radius:50%;border:2px solid #FFFFFF;"></div></div></div>', unsafe_allow_html=True)
+    # 날짜 선택 UI (일요일만 선택 가능)
+    st.markdown('<p style="font-size:11px;color:#6B7B8C;margin:0 0 4px 0;">기준 날짜 (일요일)</p>', unsafe_allow_html=True)
+    selected_date = st.date_input(
+        "기준 날짜",
+        value=st.session_state.selected_sunday,
+        label_visibility="collapsed",
+        key="date_selector"
+    )
+    # 일요일이 아닌 날짜 선택 시 가장 가까운 일요일로 조정
+    if selected_date.weekday() != 6:  # 일요일이 아니면
+        adjusted_sunday = get_nearest_sunday(selected_date)
+        if adjusted_sunday != st.session_state.selected_sunday:
+            st.session_state.selected_sunday = adjusted_sunday
+            st.session_state['dashboard_data_loaded'] = False
+            st.rerun()
+    elif selected_date != st.session_state.selected_sunday:
+        st.session_state.selected_sunday = selected_date
+        st.session_state['dashboard_data_loaded'] = False
+        st.rerun()
 
 with col_refresh:
     # 캐시 시간 표시
@@ -271,6 +314,7 @@ with col_refresh:
     st.markdown(f'<p style="font-size:10px;color:#6B7B8C;text-align:center;margin:8px 0 4px 0;">{cache_info}</p>', unsafe_allow_html=True)
     if st.button("🔄", key="refresh_btn", help="데이터 새로고침"):
         st.session_state['force_refresh'] = True
+        st.session_state['dashboard_data_loaded'] = False
         st.rerun()
 
 st.markdown("<div style='height: 36px;'></div>", unsafe_allow_html=True)
@@ -453,8 +497,13 @@ if dept_stats:
         with dept_cols[i]:
             if st.button(f"📍 {dept.get('name', '')}", key=f"dept_btn_{dept.get('dept_id', i)}", use_container_width=True):
                 st.session_state.selected_dept = dept.get('dept_id', '')
+                st.session_state.selected_group = None  # 부서 변경 시 목장 선택 초기화
                 st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
+
+    # 목장 선택 상태 초기화
+    if 'selected_group' not in st.session_state:
+        st.session_state.selected_group = None  # None이면 부서 전체
 
     # 선택된 부서의 목장 그리드
     if st.session_state.selected_dept:
@@ -471,6 +520,63 @@ if dept_stats:
 
             if groups:
                 st.markdown(render_group_grid(groups, selected_dept_name), unsafe_allow_html=True)
+
+                # 목장 선택 버튼 (전체 + 개별 목장)
+                st.markdown('<div style="margin-top:16px;">', unsafe_allow_html=True)
+
+                # 전체 보기 + 목장 버튼들
+                num_cols = min(len(groups) + 1, 6)  # 최대 6개 컬럼
+                group_cols = st.columns(num_cols)
+
+                # 전체 보기 버튼
+                with group_cols[0]:
+                    btn_label = "📋 전체" if st.session_state.selected_group is None else "전체"
+                    if st.button(btn_label, key="group_btn_all", use_container_width=True):
+                        st.session_state.selected_group = None
+                        st.rerun()
+
+                # 개별 목장 버튼
+                for i, group in enumerate(groups[:num_cols-1]):
+                    with group_cols[i + 1]:
+                        group_id = group.get('group_id', '')
+                        group_name = group.get('name', '')
+                        is_selected = (st.session_state.selected_group == group_id)
+                        btn_label = f"📍 {group_name}" if is_selected else group_name
+                        if st.button(btn_label, key=f"group_btn_{group_id}", use_container_width=True):
+                            st.session_state.selected_group = group_id
+                            st.rerun()
+
+                st.markdown('</div>', unsafe_allow_html=True)
+
+                # ============================================================
+                # 출석 현황 테이블 (B: 별도 섹션)
+                # ============================================================
+                st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+
+                # 출석 테이블 데이터 조회
+                try:
+                    attendance_table_data = api.get_dept_attendance_table(
+                        dept_id=st.session_state.selected_dept,
+                        base_date=selected_sunday_str,
+                        group_id=st.session_state.selected_group
+                    )
+
+                    # 선택된 목장명 찾기
+                    selected_group_name = None
+                    if st.session_state.selected_group:
+                        for g in groups:
+                            if g.get('group_id') == st.session_state.selected_group:
+                                selected_group_name = g.get('name')
+                                break
+
+                    # 출석 테이블 렌더링
+                    st.markdown(
+                        render_attendance_table(attendance_table_data, selected_dept_name, selected_group_name),
+                        unsafe_allow_html=True
+                    )
+                except Exception as e:
+                    st.markdown(f'<div class="attendance-table-section"><p style="color:#6B7B8C;font-size:14px;text-align:center;padding:40px;">출석 데이터를 불러올 수 없습니다: {e}</p></div>', unsafe_allow_html=True)
+
             else:
                 st.markdown(f'<div class="groups-section"><div class="groups-title">선택된 부서의 목장 ({selected_dept_name})</div><p style="color:#6B7B8C;font-size:14px;text-align:center;padding:20px;">목장 데이터가 없습니다</p></div>', unsafe_allow_html=True)
         except Exception as e:

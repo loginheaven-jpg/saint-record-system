@@ -377,8 +377,8 @@ class SheetsAPI:
         if departments.empty:
             return []
 
-        # 재적 성도 조회
-        members = self.get_members({'status': '재적'})
+        # 출석 성도 조회 (status='출석'인 성도만 - 대시보드 분모 기준)
+        members = self.get_members({'status': '출석'})
         if members.empty:
             return []
 
@@ -451,8 +451,8 @@ class SheetsAPI:
         if groups.empty:
             return []
 
-        # 재적 성도 조회
-        members = self.get_members({'status': '재적'})
+        # 출석 성도 조회 (status='출석'인 성도만 - 대시보드 분모 기준)
+        members = self.get_members({'status': '출석'})
         if members.empty:
             return []
 
@@ -645,8 +645,8 @@ class SheetsAPI:
         if departments.empty:
             return []
 
-        # 재적 성도 조회
-        members = self.get_members({'status': '재적'})
+        # 출석 성도 조회 (status='출석'인 성도만 - 대시보드 분모 기준)
+        members = self.get_members({'status': '출석'})
         if members.empty:
             return []
 
@@ -862,3 +862,98 @@ class SheetsAPI:
             })
 
         return results
+
+    def get_dept_attendance_table(self, dept_id: str, base_date: str, group_id: Optional[str] = None) -> Dict:
+        """
+        부서별 8주 출석 테이블 데이터 (출석 현황 테이블용)
+
+        Args:
+            dept_id: 부서 ID
+            base_date: 기준 날짜 (YYYY-MM-DD, 일요일)
+            group_id: 목장 ID (선택, None이면 부서 전체)
+
+        Returns: {
+            "weeks": ["12/7", "11/30", ...],  # 8주 날짜
+            "members": [
+                {"member_id": "M001", "name": "홍길동", "group_name": "네팔 목장", "attendance": [1, 1, 0, ...]},
+                ...
+            ]
+        }
+        """
+        base = pd.Timestamp(base_date)
+
+        # 8주 일요일 날짜 계산 (최근 → 과거)
+        weeks = []
+        for i in range(8):
+            sunday = base - pd.Timedelta(weeks=i)
+            weeks.append({
+                'date': sunday.strftime('%Y-%m-%d'),
+                'label': sunday.strftime('%m/%d').lstrip('0').replace('/0', '/')
+            })
+
+        # 출석 성도 조회
+        members = self.get_members({'status': '출석'})
+        if members.empty:
+            return {'weeks': [w['label'] for w in weeks], 'members': []}
+
+        # 부서 필터
+        dept_members = members[members['dept_id'].astype(str) == str(dept_id)]
+
+        # 목장 필터 (선택적)
+        if group_id:
+            dept_members = dept_members[dept_members['group_id'].astype(str) == str(group_id)]
+
+        if dept_members.empty:
+            return {'weeks': [w['label'] for w in weeks], 'members': []}
+
+        # 목장 정보 조회
+        groups = self.get_groups(dept_id)
+        group_map = {}
+        if not groups.empty:
+            for _, g in groups.iterrows():
+                group_map[str(g.get('group_id', ''))] = g.get('group_name', '')
+
+        # 각 주차별 출석 데이터 조회
+        attendance_by_week = {}
+        for week in weeks:
+            year = int(week['date'][:4])
+            attendance = self.get_attendance(year, date=week['date'])
+            attendance_by_week[week['date']] = attendance
+
+        # 멤버별 출석 현황 집계
+        result_members = []
+        for _, member in dept_members.iterrows():
+            member_id = member.get('member_id', '')
+            name = member.get('name', '')
+            group_id_val = str(member.get('group_id', ''))
+            group_name = group_map.get(group_id_val, '-')
+
+            # 8주 출석 상태
+            attendance_list = []
+            for week in weeks:
+                att_df = attendance_by_week[week['date']]
+                if att_df.empty:
+                    attendance_list.append(0)
+                else:
+                    member_att = att_df[att_df['member_id'] == member_id]
+                    if member_att.empty:
+                        attendance_list.append(0)
+                    elif member_att['attend_type'].astype(str).isin(['1', '2']).any():
+                        attendance_list.append(1)
+                    else:
+                        attendance_list.append(0)
+
+            result_members.append({
+                'member_id': member_id,
+                'name': name,
+                'group_name': group_name,
+                'attendance': attendance_list
+            })
+
+        # 이름순 정렬
+        result_members.sort(key=lambda x: x['name'])
+
+        return {
+            'weeks': [w['label'] for w in weeks],
+            'members': result_members
+        }
