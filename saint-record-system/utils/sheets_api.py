@@ -619,7 +619,7 @@ class SheetsAPI:
     def get_3week_absent_members(self) -> List[Dict]:
         """
         3주 연속 결석 성도 목록 (재적 성도 기준)
-        Returns: [{'member_id': 'M001', 'name': '홍길동', 'weeks_absent': 3}, ...]
+        Returns: [{'member_id': 'M001', 'name': '홍길동', 'weeks_absent': 3, 'dept_name': '장년부'}, ...]
         """
         now = pd.Timestamp.now()
         # 지난 일요일
@@ -629,6 +629,12 @@ class SheetsAPI:
         members = self.get_members({'status': '재적'})
         if members.empty:
             return []
+
+        # 부서명 매핑
+        departments = self.get_departments()
+        dept_map = {}
+        if not departments.empty:
+            dept_map = dict(zip(departments['dept_id'].astype(str), departments['dept_name']))
 
         # 최근 3주 일요일 날짜들
         sundays = [
@@ -653,10 +659,12 @@ class SheetsAPI:
 
             if absent_count >= 3:
                 member_info = members[members['member_id'] == member_id].iloc[0]
+                dept_id = str(member_info.get('dept_id', ''))
                 absent_candidates[member_id] = {
                     'member_id': member_id,
                     'name': member_info['name'],
-                    'weeks_absent': absent_count
+                    'weeks_absent': absent_count,
+                    'dept_name': dept_map.get(dept_id, '기타')
                 }
 
         return list(absent_candidates.values())
@@ -664,11 +672,17 @@ class SheetsAPI:
     def get_birthdays_this_week(self) -> List[Dict]:
         """
         이번 주 생일 성도 목록 (재적 성도 기준)
-        Returns: [{'member_id': 'M001', 'name': '홍길동', 'birth_date': '12/15'}, ...]
+        Returns: [{'member_id': 'M001', 'name': '홍길동', 'birth_date': '12/15', 'dept_name': '장년부'}, ...]
         """
         members = self.get_members({'status': '재적'})
         if members.empty:
             return []
+
+        # 부서명 매핑
+        departments = self.get_departments()
+        dept_map = {}
+        if not departments.empty:
+            dept_map = dict(zip(departments['dept_id'].astype(str), departments['dept_name']))
 
         now = pd.Timestamp.now()
         # 이번 주 시작(월요일)과 끝(일요일)
@@ -691,10 +705,12 @@ class SheetsAPI:
                 # birth_date가 YYYY-MM-DD 형식이라고 가정
                 birth_mm_dd = str(birth_date)[5:10]  # MM-DD 부분 추출
                 if birth_mm_dd in week_dates:
+                    dept_id = str(member.get('dept_id', ''))
                     birthdays.append({
                         'member_id': member['member_id'],
                         'name': member['name'],
-                        'birth_date': birth_mm_dd.replace('-', '/')
+                        'birth_date': birth_mm_dd.replace('-', '/'),
+                        'dept_name': dept_map.get(dept_id, '기타')
                     })
             except:
                 continue

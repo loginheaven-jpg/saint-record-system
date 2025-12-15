@@ -184,7 +184,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.8"  # 회원정보 UI 개편: 엑셀 테이블, 신규 필드, status=재적 기준
+APP_VERSION = "v3.9"  # UI 개선: 바차트 회전방지, 알림 헤더이동, 부서카드 순서/라인차트
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -273,48 +273,88 @@ render_sidebar()
 # 출석 테이블 CSS 로드
 st.markdown(get_attendance_table_css(), unsafe_allow_html=True)
 
-# 헤더
-col_title, col_date, col_refresh = st.columns([2, 1.5, 0.5])
+# 헤더 (제목 + 날짜 + 알림 + 새로고침)
+col_title, col_date, col_alerts, col_refresh = st.columns([1.8, 1, 1.8, 0.4])
 
 with col_title:
-    st.markdown('<h1 style="font-family:Playfair Display,serif;font-size:32px;font-weight:600;color:#2C3E50;margin:0 0 8px 0;">대시보드</h1><p style="font-size:14px;color:#6B7B8C;margin:0;">예봄교회 성도 현황을 한눈에 확인하세요</p>', unsafe_allow_html=True)
+    st.markdown('<h1 style="font-family:Playfair Display,serif;font-size:32px;font-weight:600;color:#2C3E50;margin:0 0 4px 0;">대시보드</h1><p style="font-size:13px;color:#6B7B8C;margin:0;">예봄교회 성도 현황</p>', unsafe_allow_html=True)
 
 with col_date:
-    # 날짜 선택 UI (일요일만 선택 가능)
-    st.markdown('<p style="font-size:11px;color:#6B7B8C;margin:0 0 4px 0;">기준 날짜 (일요일)</p>', unsafe_allow_html=True)
+    # 날짜 선택 UI
+    st.markdown('<p style="font-size:10px;color:#6B7B8C;margin:0 0 2px 0;">기준 날짜</p>', unsafe_allow_html=True)
     selected_date = st.date_input(
         "기준 날짜",
         value=st.session_state.selected_sunday,
         label_visibility="collapsed",
         key="date_selector"
     )
-    # 일요일이 아닌 날짜 선택 시 가장 가까운 일요일로 조정
     new_sunday = selected_date if selected_date.weekday() == 6 else get_nearest_sunday(selected_date)
 
-    # 날짜 변경 감지 (캐시 클리어 없이 화면만 갱신)
-    # 24시간 캐시된 전체 데이터에서 날짜별로 필터링하므로 API 호출 없음
     if new_sunday != st.session_state.selected_sunday:
         st.session_state.selected_sunday = new_sunday
         st.rerun()
 
-    # 일요일 아닌 날짜 선택 시 안내 메시지
     if selected_date.weekday() != 6:
         st.caption(f"⚠️ {new_sunday.strftime('%m/%d')}(일)로 조정됨")
 
+with col_alerts:
+    # 알림 배지 (결석자, 생일자)
+    absent_list = dashboard_data.get('absent_3weeks', [])
+    birthdays = dashboard_data.get('birthdays', [])
+
+    alert_cols = st.columns(2)
+
+    # 3주 연속 결석자
+    with alert_cols[0]:
+        absent_count = len(absent_list)
+        if absent_count > 0:
+            absent_names_short = ', '.join([m['name'] for m in absent_list[:2]])
+            absent_extra = f" 외 {absent_count - 2}명" if absent_count > 2 else ""
+            with st.popover(f"⚠️ 결석 {absent_count}명"):
+                st.markdown("**3주 연속 결석자**")
+                # 부서별로 그룹핑
+                dept_absent = {}
+                for m in absent_list:
+                    dept = m.get('dept_name', '기타')
+                    if dept not in dept_absent:
+                        dept_absent[dept] = []
+                    dept_absent[dept].append(m['name'])
+                for dept, names in dept_absent.items():
+                    st.markdown(f"**{dept}**: {', '.join(names)}")
+            st.markdown(f'<div style="font-size:11px;color:#E8985E;margin-top:-8px;">{absent_names_short}{absent_extra}</div>', unsafe_allow_html=True)
+        else:
+            st.markdown('<div style="font-size:12px;color:#4A9B7F;">✓ 결석 없음</div>', unsafe_allow_html=True)
+
+    # 이번 주 생일자
+    with alert_cols[1]:
+        bday_count = len(birthdays)
+        if bday_count > 0:
+            bday_names_short = ', '.join([b['name'] for b in birthdays[:2]])
+            bday_extra = f" 외 {bday_count - 2}명" if bday_count > 2 else ""
+            with st.popover(f"🎂 생일 {bday_count}명"):
+                st.markdown("**이번 주 생일**")
+                # 부서별로 그룹핑
+                dept_bday = {}
+                for b in birthdays:
+                    dept = b.get('dept_name', '기타')
+                    if dept not in dept_bday:
+                        dept_bday[dept] = []
+                    dept_bday[dept].append(f"{b['name']} ({b['birth_date']})")
+                for dept, names in dept_bday.items():
+                    st.markdown(f"**{dept}**: {', '.join(names)}")
+            st.markdown(f'<div style="font-size:11px;color:#C9A962;margin-top:-8px;">{bday_names_short}{bday_extra}</div>', unsafe_allow_html=True)
+        else:
+            st.markdown('<div style="font-size:12px;color:#6B7B8C;">생일 없음</div>', unsafe_allow_html=True)
+
 with col_refresh:
-    # 캐시 시간 표시
     cache_time = st.session_state.get('dashboard_cache_time', 0)
     if cache_time > 0:
         cache_age_min = int((time.time() - cache_time) / 60)
-        if cache_age_min < 60:
-            cache_info = f"{cache_age_min}분 전"
-        else:
-            cache_info = f"{cache_age_min // 60}시간 전"
+        cache_info = f"{cache_age_min}분" if cache_age_min < 60 else f"{cache_age_min // 60}h"
     else:
-        cache_info = "새 데이터"
-    st.markdown(f'<p style="font-size:10px;color:#6B7B8C;text-align:center;margin:8px 0 4px 0;">{cache_info}</p>', unsafe_allow_html=True)
+        cache_info = "new"
+    st.markdown(f'<p style="font-size:9px;color:#6B7B8C;text-align:center;margin:4px 0 2px 0;">{cache_info}</p>', unsafe_allow_html=True)
     if st.button("🔄", key="refresh_btn", help="데이터 새로고침"):
-        # 모든 캐시 완전 클리어
         fetch_dashboard_data_from_api.clear()
         clear_sheets_cache()
         st.session_state['force_refresh'] = True
@@ -404,37 +444,37 @@ if stacked_data:
 
     fig = go.Figure()
 
-    # 어린이부 (맨 아래) - 숫자 내부 표시
+    # 어린이부 (맨 아래) - 숫자 내부 표시, textangle=0으로 회전 방지
     fig.add_trace(go.Bar(
         x=weeks, y=children_data, name='어린이부',
         marker_color='#D2691E', marker_line_width=0,
         text=children_data, textposition='inside',
         textfont=dict(color='white', size=12),
-        insidetextanchor='middle'
+        insidetextanchor='middle', textangle=0
     ))
-    # 청소년부 - 숫자 내부 표시
+    # 청소년부 - 숫자 내부 표시, textangle=0으로 회전 방지
     fig.add_trace(go.Bar(
         x=weeks, y=teens_data, name='청소년부',
         marker_color='#6B8E23', marker_line_width=0,
         text=teens_data, textposition='inside',
         textfont=dict(color='white', size=12),
-        insidetextanchor='middle'
+        insidetextanchor='middle', textangle=0
     ))
-    # 청년부 - 숫자 내부 표시
+    # 청년부 - 숫자 내부 표시, textangle=0으로 회전 방지
     fig.add_trace(go.Bar(
         x=weeks, y=youth_data, name='청년부',
         marker_color='#556B82', marker_line_width=0,
         text=youth_data, textposition='inside',
         textfont=dict(color='white', size=12),
-        insidetextanchor='middle'
+        insidetextanchor='middle', textangle=0
     ))
-    # 장년부 (맨 위) - 숫자 내부 표시
+    # 장년부 (맨 위) - 숫자 내부 표시, textangle=0으로 회전 방지
     fig.add_trace(go.Bar(
         x=weeks, y=adults_data, name='장년부',
         marker_color='#6B5B47', marker_line_width=0,
         text=adults_data, textposition='inside',
         textfont=dict(color='white', size=12),
-        insidetextanchor='middle'
+        insidetextanchor='middle', textangle=0
     ))
 
     # 합계를 바 위에 표시 (scatter로 추가)
@@ -451,10 +491,11 @@ if stacked_data:
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         margin=dict(l=0, r=0, t=30, b=40),
-        height=380,  # 높이 증가 (공백 축소한 만큼)
+        height=380,
         showlegend=False,
         barcornerradius=4,
-        dragmode=False,  # 드래그 줌 비활성화
+        dragmode=False,
+        uniformtext=dict(minsize=10, mode='hide'),  # 텍스트 회전 방지
         xaxis=dict(
             showgrid=False,
             showline=False,
@@ -558,36 +599,62 @@ if dept_stats:
             groups_count = dept.get('groups_count', 0)
             members_count = dept.get('members_count', 0)
             attendance_rate = dept.get('attendance_rate', 0)
+            attendance_count = int(members_count * attendance_rate / 100) if members_count > 0 else 0
             group_label = "반" if dept.get('css_class') == "children" else "목장"
 
-            # 미니 트렌드 바 생성
-            trend_bars = ""
-            if trend_data:
+            # 미니 트렌드 라인차트 생성 (꺾은선 + 점 아래 숫자)
+            trend_chart = ""
+            if trend_data and len(trend_data) > 0:
                 max_val = max(trend_data) if max(trend_data) > 0 else 100
-                for val in trend_data:
-                    h = int((val / max_val) * 40) if max_val > 0 else 0
-                    trend_bars += f'<div style="width:8px;height:{h}px;background:#C9A962;border-radius:2px;"></div>'
+                min_val = min(trend_data) if min(trend_data) > 0 else 0
+                range_val = max_val - min_val if max_val != min_val else 1
+
+                # SVG 꺾은선 차트 생성
+                chart_width = 120
+                chart_height = 36
+                points = []
+                labels = []
+                for idx, val in enumerate(trend_data):
+                    x = int((idx / (len(trend_data) - 1)) * (chart_width - 10)) + 5 if len(trend_data) > 1 else chart_width // 2
+                    y = int(chart_height - 8 - ((val - min_val) / range_val) * (chart_height - 16))
+                    points.append(f"{x},{y}")
+                    # 점 아래 숫자 (매 2번째만 표시하여 겹침 방지)
+                    if idx % 2 == 1 or len(trend_data) <= 4:
+                        labels += f'<circle cx="{x}" cy="{y}" r="3" fill="{dept_color}"/>'
+                        labels += f'<text x="{x}" y="{y + 12}" text-anchor="middle" font-size="8" fill="#6B7B8C">{val}</text>'
+                    else:
+                        labels += f'<circle cx="{x}" cy="{y}" r="2" fill="{dept_color}"/>'
+
+                polyline = f'<polyline points="{" ".join(points)}" fill="none" stroke="{dept_color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+                trend_chart = f'<svg width="{chart_width}" height="{chart_height + 10}" style="overflow:visible;">{polyline}{"".join(labels)}</svg>'
+            else:
+                trend_chart = '<div style="color:#6B7B8C;font-size:10px;">8주 트렌드</div>'
 
             active_style = "border-color:#C9A962;background:linear-gradient(135deg,rgba(201,169,98,0.15) 0%,rgba(201,169,98,0.05) 100%);" if is_active else ""
 
+            # 순서: 전체/출석/출석률/목장
             st.markdown(f'''
-                <div style="background:#F8F6F3;border:2px solid #E8E4DF;border-radius:12px;padding:16px;margin-top:8px;{active_style}">
-                    <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:12px;">
+                <div style="background:#F8F6F3;border:2px solid #E8E4DF;border-radius:12px;padding:12px;margin-top:8px;{active_style}">
+                    <div style="display:flex;justify-content:space-between;gap:4px;margin-bottom:8px;">
                         <div style="text-align:center;flex:1;">
-                            <div style="font-size:10px;color:#6B7B8C;margin-bottom:2px;">{group_label}</div>
-                            <div style="font-size:18px;font-weight:700;color:#2C3E50;">{groups_count}</div>
+                            <div style="font-size:9px;color:#6B7B8C;margin-bottom:1px;">전체</div>
+                            <div style="font-size:16px;font-weight:700;color:#2C3E50;">{members_count}</div>
                         </div>
                         <div style="text-align:center;flex:1;">
-                            <div style="font-size:10px;color:#6B7B8C;margin-bottom:2px;">성도</div>
-                            <div style="font-size:18px;font-weight:700;color:#2C3E50;">{members_count}</div>
+                            <div style="font-size:9px;color:#6B7B8C;margin-bottom:1px;">출석</div>
+                            <div style="font-size:16px;font-weight:700;color:#4A9B7F;">{attendance_count}</div>
                         </div>
                         <div style="text-align:center;flex:1;">
-                            <div style="font-size:10px;color:#6B7B8C;margin-bottom:2px;">출석률</div>
-                            <div style="font-size:18px;font-weight:700;color:#4A9B7F;">{attendance_rate}%</div>
+                            <div style="font-size:9px;color:#6B7B8C;margin-bottom:1px;">출석률</div>
+                            <div style="font-size:16px;font-weight:700;color:#C9A962;">{attendance_rate}%</div>
+                        </div>
+                        <div style="text-align:center;flex:1;">
+                            <div style="font-size:9px;color:#6B7B8C;margin-bottom:1px;">{group_label}</div>
+                            <div style="font-size:16px;font-weight:700;color:#2C3E50;">{groups_count}</div>
                         </div>
                     </div>
-                    <div style="display:flex;align-items:flex-end;justify-content:space-between;height:40px;gap:2px;padding-top:8px;border-top:1px solid #E8E4DF;">
-                        {trend_bars if trend_bars else '<div style="color:#6B7B8C;font-size:11px;">8주 트렌드</div>'}
+                    <div style="display:flex;align-items:center;justify-content:center;padding-top:6px;border-top:1px solid #E8E4DF;">
+                        {trend_chart}
                     </div>
                 </div>
             ''', unsafe_allow_html=True)
@@ -780,36 +847,5 @@ else:
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
-
-# ============================================================
-# 섹션 3: 알림
-# ============================================================
-st.markdown('''<div style="background:#FFFFFF;border-radius:24px;padding:28px;box-shadow:0 2px 20px rgba(44,62,80,0.06);">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:22px;height:22px;color:#C9A962;">
-            <path d="M18 8A6 6 0 106 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-            <path d="M13.73 21a2 2 0 01-3.46 0"/>
-        </svg>
-        <span style="font-size:18px;font-weight:600;color:#2C3E50;">알림</span>
-    </div>
-''', unsafe_allow_html=True)
-
-# 3주 연속 결석 알림
-absent_list = dashboard_data.get('absent_3weeks', [])
-if absent_list:
-    names = ', '.join([m['name'] for m in absent_list[:3]])
-    extra = f" 외 {len(absent_list)-3}명" if len(absent_list) > 3 else ""
-    st.markdown(render_alert_item("warning", "warning", "3주 연속 결석", names + extra), unsafe_allow_html=True)
-else:
-    st.markdown(render_alert_item("info", "check", "출석 양호", "3주 연속 결석자가 없습니다"), unsafe_allow_html=True)
-
-# 이번 주 생일 알림
-birthdays = dashboard_data.get('birthdays', [])
-if birthdays:
-    bday_text = ', '.join([f"{b['name']} ({b['birth_date']})" for b in birthdays[:3]])
-    extra = f" 외 {len(birthdays)-3}명" if len(birthdays) > 3 else ""
-    st.markdown(render_alert_item("info", "gift", "🎂 이번 주 생일", bday_text + extra), unsafe_allow_html=True)
-
-st.markdown('</div>', unsafe_allow_html=True)
+# 알림은 헤더 우측 상단으로 이동됨
 

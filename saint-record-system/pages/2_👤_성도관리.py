@@ -514,7 +514,8 @@ if db_connected:
                 birth_date = str(member.get('birth_date', '-'))[:10] if member.get('birth_date') else '-'
                 lunar = '음' if member.get('lunar_solar') == 'N' else '양'
                 phone = member.get('phone', '-')
-                address = member.get('address', '-') or '-'
+                address_raw = member.get('address', '')
+                address = str(address_raw) if pd.notna(address_raw) and address_raw else '-'
                 register_date = str(member.get('register_date', '-'))[:10] if member.get('register_date') else '-'
                 baptism = member.get('baptism_status', '-') or '-'
                 church_role = member.get('church_role', '-')
