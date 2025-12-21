@@ -186,7 +186,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.26"  # 대시보드 제목 + 날짜박스 같은 행
+APP_VERSION = "v3.27"  # 날짜 크기 축소, 우측 정렬
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -334,22 +334,30 @@ st.markdown("""
     margin-top: 4px;
 }
 
-/* 날짜 박스 popover 버튼 스타일 (목업 일치) */
+/* 날짜 박스 popover 버튼 스타일 */
 [data-testid="stPopover"] > button {
     background: white !important;
     border: 1px solid #E8E4DF !important;
-    border-radius: 12px !important;
-    padding: 10px 16px !important;
+    border-radius: 10px !important;
+    padding: 8px 12px !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
     color: #2C3E50 !important;
-    font-weight: 600 !important;
-    white-space: pre-line !important;
-    text-align: left !important;
-    line-height: 1.4 !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
 }
 [data-testid="stPopover"] > button:hover {
     border-color: #C9A962 !important;
     box-shadow: 0 4px 12px rgba(201, 169, 98, 0.15) !important;
+}
+
+/* 컬럼 우측 정렬 */
+[data-testid="stHorizontalBlock"] {
+    align-items: flex-start !important;
+}
+[data-testid="stHorizontalBlock"] > [data-testid="column"]:last-child {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
 }
 
 /* 새로고침 버튼 스타일 */
@@ -441,7 +449,7 @@ alerts_html = f'''
 st.markdown(alerts_html, unsafe_allow_html=True)
 
 # 메인 행: 대시보드(좌) + 날짜박스 + 새로고침(우) - 같은 행
-col_title, col_spacer, col_date_box, col_refresh = st.columns([1.5, 1.5, 1.2, 0.5])
+col_title, col_date_box, col_refresh = st.columns([2.5, 1, 0.3])
 
 with col_title:
     st.markdown('''
@@ -453,10 +461,12 @@ with col_title:
 
 with col_date_box:
     # 날짜 박스 (popover로 클릭 시 날짜 선택)
-    with st.popover(f"📅 기준일\n{date_str}", use_container_width=True):
+    with st.popover(f"📅 {date_str}"):
+        st.caption("기준일 선택")
         selected_date = st.date_input(
             "날짜 선택",
             value=st.session_state.selected_sunday,
+            label_visibility="collapsed",
             key="date_selector"
         )
         new_sunday = selected_date if selected_date.weekday() == 6 else get_nearest_sunday(selected_date)
