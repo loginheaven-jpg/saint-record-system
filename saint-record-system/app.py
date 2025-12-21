@@ -186,7 +186,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.21"  # 헤더 UI 개선 - Option C 100% 일치
+APP_VERSION = "v3.22"  # 헤더 UI 수정 - 날짜 중복 제거
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -232,12 +232,13 @@ render_shared_sidebar("dashboard")
 # 출석 테이블 CSS 로드
 st.markdown(get_attendance_table_css(), unsafe_allow_html=True)
 
-# 헤더 CSS (Option C: 2-tier 레이아웃 - HTML 목업 100% 일치)
+# 헤더 CSS (Option C: 2-tier 레이아웃)
 st.markdown("""
 <style>
 /* Option C 헤더 레이아웃 */
 .header-new-c {
     position: relative;
+    margin-bottom: 8px;
 }
 
 /* 상단 알림 (우측 상단 고정) */
@@ -277,11 +278,8 @@ st.markdown("""
 .header-new-c .alert-inline .count.warning { color: #E65100; }
 .header-new-c .alert-inline .count.info { color: #F57F17; }
 
-/* 메인: 제목 + 날짜/새로고침 */
+/* 메인: 제목 */
 .header-new-c .main-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
     padding-top: 24px;
 }
 .header-new-c .title-section h1 {
@@ -297,57 +295,62 @@ st.markdown("""
     margin: 0;
 }
 
-.header-new-c .controls {
+/* 컨트롤 영역 스타일 */
+.date-label-box {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    padding: 8px 0;
 }
-.header-new-c .date-display {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 16px;
-    background: white;
-    border: 1px solid #E8E4DF;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+.date-label-box .icon {
+    font-size: 16px;
 }
-.header-new-c .date-display .icon {
-    font-size: 18px;
-    color: #C9A962;
-}
-.header-new-c .date-display .info {
-    display: flex;
-    flex-direction: column;
-}
-.header-new-c .date-display .label {
-    font-size: 10px;
+.date-label-box .label {
+    font-size: 11px;
     color: #6B7B8C;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-weight: 500;
 }
-.header-new-c .date-display .value {
-    font-size: 15px;
-    font-weight: 600;
-    color: #2C3E50;
-}
-.header-new-c .divider {
+
+.ctrl-divider {
     width: 1px;
-    height: 32px;
+    height: 28px;
     background: #E8E4DF;
+    margin: 0 auto;
 }
-.header-new-c .refresh-area {
+
+.refresh-area {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 2px;
 }
-.header-new-c .cache-time {
+.refresh-area .cache-time {
     font-size: 10px;
     color: #6B7B8C;
 }
 
-/* Streamlit 새로고침 버튼 스타일 오버라이드 */
+/* 컨트롤 컬럼 세로 정렬 */
+div[data-testid="column"]:has(.date-label-box),
+div[data-testid="column"]:has(.ctrl-divider),
+div[data-testid="column"]:has(.refresh-area) {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+/* Streamlit date_input 스타일 */
+div[data-testid="column"]:has(.date-label-box) + div[data-testid="column"] input {
+    background: white !important;
+    border: 1px solid #E8E4DF !important;
+    border-radius: 10px !important;
+    padding: 8px 12px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #2C3E50 !important;
+}
+
+/* Streamlit 새로고침 버튼 스타일 */
 div[data-testid="column"]:has(.refresh-area) button {
     width: 40px !important;
     height: 40px !important;
@@ -371,12 +374,6 @@ div[data-testid="column"]:has(.refresh-area) button:hover {
 div[data-testid="column"]:has(.refresh-area) button p {
     margin: 0 !important;
     line-height: 1 !important;
-}
-
-/* 날짜 선택 컬럼 정렬 */
-div[data-testid="column"]:has(.date-picker-col) {
-    display: flex !important;
-    align-items: center !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -427,7 +424,7 @@ weekday_names = ['월', '화', '수', '목', '금', '토', '일']
 weekday = weekday_names[st.session_state.selected_sunday.weekday()]
 date_str = f"{st.session_state.selected_sunday.year}. {st.session_state.selected_sunday.month}. {st.session_state.selected_sunday.day} ({weekday})"
 
-# Option C 헤더 (HTML - 알림 + 제목 + 날짜표시)
+# Option C 헤더 (HTML - 알림 + 제목만, 컨트롤은 Streamlit 위젯으로)
 header_html = f'''
 <div class="header-new-c">
     <div class="alerts-float">
@@ -447,32 +444,25 @@ header_html = f'''
             <h1>대시보드</h1>
             <p>예봄교회 성도 현황</p>
         </div>
-        <div class="controls">
-            <div class="date-display">
-                <span class="icon">📅</span>
-                <div class="info">
-                    <span class="label">기준일</span>
-                    <span class="value">{date_str}</span>
-                </div>
-            </div>
-            <div class="divider"></div>
-            <div class="refresh-area">
-                <div id="refresh-btn-placeholder"></div>
-                <span class="cache-time">{cache_info}</span>
-            </div>
-        </div>
     </div>
 </div>
 '''
 st.markdown(header_html, unsafe_allow_html=True)
 
-# 컨트롤 영역 (날짜 선택 + 새로고침) - Streamlit 위젯
-col_spacer, col_date_picker, col_refresh = st.columns([4, 0.8, 0.4])
+# 컨트롤 영역 (날짜 선택 + 새로고침) - 우측 정렬
+col_spacer, col_date_label, col_date_picker, col_divider, col_refresh = st.columns([2.5, 0.5, 1, 0.1, 0.5])
+
+with col_date_label:
+    st.markdown(f'''
+    <div class="date-label-box">
+        <span class="icon">📅</span>
+        <span class="label">기준일</span>
+    </div>
+    ''', unsafe_allow_html=True)
 
 with col_date_picker:
-    st.markdown('<div class="date-picker-col"></div>', unsafe_allow_html=True)
     selected_date = st.date_input(
-        "날짜 변경",
+        "기준일",
         value=st.session_state.selected_sunday,
         label_visibility="collapsed",
         key="date_selector"
@@ -483,8 +473,11 @@ with col_date_picker:
         st.session_state.selected_sunday = new_sunday
         st.rerun()
 
+with col_divider:
+    st.markdown('<div class="ctrl-divider"></div>', unsafe_allow_html=True)
+
 with col_refresh:
-    st.markdown('<div class="refresh-area"></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="refresh-area"><span class="cache-time">{cache_info}</span></div>', unsafe_allow_html=True)
     if st.button("🔄", key="refresh_btn", help="데이터 새로고침"):
         fetch_dashboard_data_from_api.clear()
         clear_sheets_cache()
