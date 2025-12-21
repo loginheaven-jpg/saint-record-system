@@ -186,7 +186,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.22"  # 헤더 UI 수정 - 날짜 중복 제거
+APP_VERSION = "v3.24"  # 헤더 레이아웃 수정
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -293,30 +293,6 @@ st.markdown("""
     margin: 0;
 }
 
-/* 날짜 표시 박스 */
-.date-display-box {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 16px;
-    background: white;
-    border: 1px solid #E8E4DF;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
-.date-display-box .icon { font-size: 18px; color: #C9A962; }
-.date-display-box .info { display: flex; flex-direction: column; }
-.date-display-box .label {
-    font-size: 10px;
-    color: #6B7B8C;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.date-display-box .value {
-    font-size: 15px;
-    font-weight: 600;
-    color: #2C3E50;
-}
 
 /* 구분선 */
 .ctrl-divider {
@@ -350,39 +326,46 @@ st.markdown("""
     justify-content: flex-start !important;
 }
 
-/* 날짜 컬럼 - 박스와 date_input 오버레이 */
-.main-row-cols [data-testid="column"]:has(.date-display-box) {
-    position: relative;
+/* 아이콘 + 라벨 영역 */
+.date-icon-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding-top: 4px;
 }
-.main-row-cols [data-testid="column"]:has(.date-display-box) [data-testid="stDateInput"] {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    opacity: 0;
-    width: 100%;
-    cursor: pointer;
+.date-icon-label .icon {
+    font-size: 18px;
+    color: #C9A962;
 }
-.main-row-cols [data-testid="column"]:has(.date-display-box) [data-testid="stDateInput"] > div {
-    height: 100%;
+.date-icon-label .label {
+    font-size: 10px;
+    color: #6B7B8C;
+    text-transform: uppercase;
 }
-.main-row-cols [data-testid="column"]:has(.date-display-box) [data-testid="stDateInput"] input {
-    height: 100%;
-    cursor: pointer;
+
+/* 캐시 시간 텍스트 */
+.cache-time-text {
+    font-size: 10px;
+    color: #6B7B8C;
+    text-align: center;
+    margin-bottom: 4px;
 }
-/* 박스에 hover 효과 */
-.date-display-box {
-    cursor: pointer;
-    transition: all 0.2s ease;
+
+/* 날짜 입력 스타일링 */
+[data-testid="stDateInput"] > div {
+    background: white;
+    border: 1px solid #E8E4DF;
+    border-radius: 10px;
 }
-.date-display-box:hover {
-    border-color: #C9A962;
-    box-shadow: 0 4px 12px rgba(201, 169, 98, 0.15);
+[data-testid="stDateInput"] input {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #2C3E50 !important;
 }
 
 /* 새로고침 버튼 스타일 */
-.refresh-col button[data-testid="stBaseButton-secondary"] {
+button[data-testid="stBaseButton-secondary"] {
     width: 40px !important;
     height: 40px !important;
     min-width: 40px !important;
@@ -395,11 +378,11 @@ st.markdown("""
     box-shadow: 0 4px 12px rgba(201, 169, 98, 0.3) !important;
     transition: all 0.2s ease !important;
 }
-.refresh-col button[data-testid="stBaseButton-secondary"]:hover {
+button[data-testid="stBaseButton-secondary"]:hover {
     transform: translateY(-2px) !important;
     box-shadow: 0 6px 16px rgba(201, 169, 98, 0.4) !important;
 }
-.refresh-col button p {
+button[data-testid="stBaseButton-secondary"] p {
     margin: 0 !important;
     line-height: 1 !important;
 }
@@ -470,8 +453,7 @@ alerts_html = f'''
 st.markdown(alerts_html, unsafe_allow_html=True)
 
 # 메인 행: 제목(좌) + 컨트롤(우) - 같은 행에 배치
-st.markdown('<div class="main-row-cols">', unsafe_allow_html=True)
-col_title, col_spacer, col_date, col_divider, col_refresh = st.columns([1.8, 0.5, 1.2, 0.15, 0.6])
+col_title, col_spacer, col_icon, col_date, col_divider, col_refresh = st.columns([1.5, 0.3, 0.3, 0.8, 0.1, 0.3])
 
 with col_title:
     st.markdown('''
@@ -481,18 +463,15 @@ with col_title:
     </div>
     ''', unsafe_allow_html=True)
 
-with col_date:
-    # 날짜 표시 박스 (아이콘 + 라벨 + 값)
+with col_icon:
     st.markdown(f'''
-    <div class="date-display-box">
+    <div class="date-icon-label">
         <span class="icon">📅</span>
-        <div class="info">
-            <span class="label">기준일</span>
-            <span class="value">{date_str}</span>
-        </div>
+        <span class="label">기준일</span>
     </div>
     ''', unsafe_allow_html=True)
-    # 숨겨진 날짜 선택기 (박스 클릭 시 활성화 - CSS로 오버레이)
+
+with col_date:
     selected_date = st.date_input(
         "기준일",
         value=st.session_state.selected_sunday,
@@ -509,8 +488,7 @@ with col_divider:
     st.markdown('<div class="ctrl-divider"></div>', unsafe_allow_html=True)
 
 with col_refresh:
-    st.markdown('<div class="refresh-col">', unsafe_allow_html=True)
-    st.markdown(f'<div class="refresh-area"><span class="cache-time">{cache_info}</span></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="cache-time-text">{cache_info}</div>', unsafe_allow_html=True)
     if st.button("🔄", key="refresh_btn", help="데이터 새로고침"):
         fetch_dashboard_data_from_api.clear()
         clear_sheets_cache()
@@ -518,9 +496,6 @@ with col_refresh:
         st.session_state['dashboard_data_loaded'] = False
         st.session_state['dashboard_cache_time'] = 0
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
-
-st.markdown('</div>', unsafe_allow_html=True)
 st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
 # 통계 데이터 계산
