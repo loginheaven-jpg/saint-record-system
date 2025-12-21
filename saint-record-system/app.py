@@ -186,7 +186,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.24"  # 헤더 레이아웃 수정
+APP_VERSION = "v3.25"  # 날짜 박스 popover 방식
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -326,42 +326,30 @@ st.markdown("""
     justify-content: flex-start !important;
 }
 
-/* 아이콘 + 라벨 영역 */
-.date-icon-label {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    padding-top: 4px;
-}
-.date-icon-label .icon {
-    font-size: 18px;
-    color: #C9A962;
-}
-.date-icon-label .label {
-    font-size: 10px;
-    color: #6B7B8C;
-    text-transform: uppercase;
-}
-
 /* 캐시 시간 텍스트 */
 .cache-time-text {
     font-size: 10px;
     color: #6B7B8C;
     text-align: center;
-    margin-bottom: 4px;
+    margin-top: 4px;
 }
 
-/* 날짜 입력 스타일링 */
-[data-testid="stDateInput"] > div {
-    background: white;
-    border: 1px solid #E8E4DF;
-    border-radius: 10px;
-}
-[data-testid="stDateInput"] input {
-    font-size: 14px !important;
-    font-weight: 600 !important;
+/* 날짜 박스 popover 버튼 스타일 (목업 일치) */
+[data-testid="stPopover"] > button {
+    background: white !important;
+    border: 1px solid #E8E4DF !important;
+    border-radius: 12px !important;
+    padding: 10px 16px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
     color: #2C3E50 !important;
+    font-weight: 600 !important;
+    white-space: pre-line !important;
+    text-align: left !important;
+    line-height: 1.4 !important;
+}
+[data-testid="stPopover"] > button:hover {
+    border-color: #C9A962 !important;
+    box-shadow: 0 4px 12px rgba(201, 169, 98, 0.15) !important;
 }
 
 /* 새로고침 버튼 스타일 */
@@ -452,43 +440,24 @@ alerts_html = f'''
 '''
 st.markdown(alerts_html, unsafe_allow_html=True)
 
-# 메인 행: 제목(좌) + 컨트롤(우) - 같은 행에 배치
-col_title, col_spacer, col_icon, col_date, col_divider, col_refresh = st.columns([1.5, 0.3, 0.3, 0.8, 0.1, 0.3])
+# 메인 행: 우측에 날짜+새로고침만 배치 (목업과 일치)
+col_spacer, col_date_box, col_refresh = st.columns([3, 1.2, 0.5])
 
-with col_title:
-    st.markdown('''
-    <div class="title-section">
-        <h1>대시보드</h1>
-        <p>예봄교회 성도 현황</p>
-    </div>
-    ''', unsafe_allow_html=True)
+with col_date_box:
+    # 날짜 박스 (popover로 클릭 시 날짜 선택)
+    with st.popover(f"📅 기준일\n{date_str}", use_container_width=True):
+        selected_date = st.date_input(
+            "날짜 선택",
+            value=st.session_state.selected_sunday,
+            key="date_selector"
+        )
+        new_sunday = selected_date if selected_date.weekday() == 6 else get_nearest_sunday(selected_date)
 
-with col_icon:
-    st.markdown(f'''
-    <div class="date-icon-label">
-        <span class="icon">📅</span>
-        <span class="label">기준일</span>
-    </div>
-    ''', unsafe_allow_html=True)
-
-with col_date:
-    selected_date = st.date_input(
-        "기준일",
-        value=st.session_state.selected_sunday,
-        label_visibility="collapsed",
-        key="date_selector"
-    )
-    new_sunday = selected_date if selected_date.weekday() == 6 else get_nearest_sunday(selected_date)
-
-    if new_sunday != st.session_state.selected_sunday:
-        st.session_state.selected_sunday = new_sunday
-        st.rerun()
-
-with col_divider:
-    st.markdown('<div class="ctrl-divider"></div>', unsafe_allow_html=True)
+        if new_sunday != st.session_state.selected_sunday:
+            st.session_state.selected_sunday = new_sunday
+            st.rerun()
 
 with col_refresh:
-    st.markdown(f'<div class="cache-time-text">{cache_info}</div>', unsafe_allow_html=True)
     if st.button("🔄", key="refresh_btn", help="데이터 새로고침"):
         fetch_dashboard_data_from_api.clear()
         clear_sheets_cache()
@@ -496,6 +465,7 @@ with col_refresh:
         st.session_state['dashboard_data_loaded'] = False
         st.session_state['dashboard_cache_time'] = 0
         st.rerun()
+    st.markdown(f'<div class="cache-time-text">{cache_info}</div>', unsafe_allow_html=True)
 st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
 # 통계 데이터 계산
