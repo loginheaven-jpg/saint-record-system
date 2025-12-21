@@ -186,7 +186,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.27"  # 날짜 크기 축소, 우측 정렬
+APP_VERSION = "v3.29"  # popover 제거, date_input 직접 사용
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -334,29 +334,24 @@ st.markdown("""
     margin-top: 4px;
 }
 
-/* 날짜 박스 popover 버튼 스타일 */
-[data-testid="stPopover"] > button {
+/* 날짜 선택 date_input 스타일 */
+[data-testid="stDateInput"] {
+    max-width: 180px !important;
+}
+[data-testid="stDateInput"] > div {
     background: white !important;
     border: 1px solid #E8E4DF !important;
     border-radius: 10px !important;
-    padding: 6px 14px !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
-    color: #2C3E50 !important;
-    font-size: 12px !important;
+}
+[data-testid="stDateInput"] input {
+    font-size: 13px !important;
     font-weight: 500 !important;
-    height: 36px !important;
+    color: #2C3E50 !important;
+    padding: 6px 10px !important;
 }
-[data-testid="stPopover"] > button:hover {
+[data-testid="stDateInput"]:hover > div {
     border-color: #C9A962 !important;
-    box-shadow: 0 4px 12px rgba(201, 169, 98, 0.15) !important;
-}
-/* expand more 아이콘 숨기기 */
-[data-testid="stPopover"] > button > div:last-child {
-    display: none !important;
-}
-/* popover 버튼 내부 텍스트 정렬 */
-[data-testid="stPopover"] > button > div:first-child {
-    margin: 0 !important;
 }
 
 /* 헤더 행 정렬 */
@@ -472,20 +467,19 @@ with col_title:
     ''', unsafe_allow_html=True)
 
 with col_date_box:
-    # 날짜 박스 (popover로 클릭 시 날짜 선택)
-    with st.popover(f"📅 {date_str}"):
-        st.caption("기준일 선택")
-        selected_date = st.date_input(
-            "날짜 선택",
-            value=st.session_state.selected_sunday,
-            label_visibility="collapsed",
-            key="date_selector"
-        )
-        new_sunday = selected_date if selected_date.weekday() == 6 else get_nearest_sunday(selected_date)
+    # 날짜 선택 (date_input 직접 사용)
+    st.markdown('<div style="font-size:11px;color:#6B7B8C;margin-bottom:2px;">📅 기준일</div>', unsafe_allow_html=True)
+    selected_date = st.date_input(
+        "기준일",
+        value=st.session_state.selected_sunday,
+        label_visibility="collapsed",
+        key="date_selector"
+    )
+    new_sunday = selected_date if selected_date.weekday() == 6 else get_nearest_sunday(selected_date)
 
-        if new_sunday != st.session_state.selected_sunday:
-            st.session_state.selected_sunday = new_sunday
-            st.rerun()
+    if new_sunday != st.session_state.selected_sunday:
+        st.session_state.selected_sunday = new_sunday
+        st.rerun()
 
 with col_refresh:
     if st.button("🔄", key="refresh_btn", help="데이터 새로고침"):
