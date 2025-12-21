@@ -186,7 +186,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.29"  # popover 제거, date_input 직접 사용
+APP_VERSION = "v3.30"  # 버튼 CSS side effect 수정
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -367,8 +367,8 @@ st.markdown("""
     padding-right: 0 !important;
 }
 
-/* 새로고침 버튼 스타일 */
-button[data-testid="stBaseButton-secondary"] {
+/* 새로고침 버튼 스타일 (헤더 영역 내 버튼에만 적용) */
+.alerts-float + div[data-testid="stHorizontalBlock"] button[data-testid="stBaseButton-secondary"] {
     width: 40px !important;
     height: 40px !important;
     min-width: 40px !important;
@@ -381,11 +381,11 @@ button[data-testid="stBaseButton-secondary"] {
     box-shadow: 0 4px 12px rgba(201, 169, 98, 0.3) !important;
     transition: all 0.2s ease !important;
 }
-button[data-testid="stBaseButton-secondary"]:hover {
+.alerts-float + div[data-testid="stHorizontalBlock"] button[data-testid="stBaseButton-secondary"]:hover {
     transform: translateY(-2px) !important;
     box-shadow: 0 6px 16px rgba(201, 169, 98, 0.4) !important;
 }
-button[data-testid="stBaseButton-secondary"] p {
+.alerts-float + div[data-testid="stHorizontalBlock"] button[data-testid="stBaseButton-secondary"] p {
     margin: 0 !important;
     line-height: 1 !important;
 }
