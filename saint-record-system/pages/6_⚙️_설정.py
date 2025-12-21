@@ -144,7 +144,7 @@ with col_title:
     """, unsafe_allow_html=True)
 
 # 앱 버전 (app.py와 동일)
-APP_VERSION = "v3.16"
+APP_VERSION = "v3.17"
 
 # 시스템 정보 섹션
 st.markdown("""
@@ -232,8 +232,11 @@ st.markdown("""
 # 버전 히스토리
 with st.expander("📋 버전 히스토리"):
     st.markdown("""
+    **v3.17** - 알림 배지 hover 툴팁 수정
+    - 팝오버 방식 → 네이티브 브라우저 툴팁 (title 속성)
+    - Streamlit 호환성 개선
+
     **v3.16** - 대시보드 UI 개선
-    - 알림 배지 hover 시 팝오버 표시
     - 제목 스타일 통일 (font-size 16px)
     - 데이터 영역 좌측 강조 바 추가
     - 헤더 레이아웃 정렬 개선

@@ -5,6 +5,7 @@ from datetime import date, timedelta
 import pandas as pd
 import plotly.graph_objects as go
 import time
+import re
 from utils.sheets_api import SheetsAPI, clear_sheets_cache
 from utils.ui import (
     load_custom_css, render_stat_card, render_dept_item,
@@ -184,7 +185,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.16"  # 대시보드 UI 개선 (알림 팝오버, 제목 통일, 좌측 강조 바)
+APP_VERSION = "v3.17"  # 알림 배지 hover 툴팁 수정 (네이티브 title 속성)
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -331,25 +332,10 @@ with col_alerts:
         for dept, names in dept_bday.items():
             bday_detail += f"<div style='margin-bottom:4px;'><strong>{dept}</strong> ({len(names)}명): {', '.join(names)}</div>"
 
-    # 알림 배지 HTML (hover 시 팝오버 표시)
-    # 팝오버 내용 (결석자/생일자가 있을 때만)
-    absent_popover = ""
-    if absent_count > 0:
-        absent_popover = f'''
-            <div class="alert-popover">
-                <div class="alert-popover-title" style="color:#E65100;">⚠️ 3주 연속 결석 ({absent_count}명)</div>
-                <div class="alert-popover-content">{absent_detail}</div>
-            </div>
-        '''
-
-    bday_popover = ""
-    if bday_count > 0:
-        bday_popover = f'''
-            <div class="alert-popover">
-                <div class="alert-popover-title" style="color:#F57F17;">🎂 금주 생일 ({bday_count}명)</div>
-                <div class="alert-popover-content">{bday_detail}</div>
-            </div>
-        '''
+    # 알림 배지 HTML (title 속성으로 네이티브 툴팁)
+    # HTML 태그 제거한 순수 텍스트 툴팁
+    absent_tooltip = re.sub('<[^<]+?>', '', absent_detail).replace('&nbsp;', ' ').strip() if absent_count > 0 else "결석자 없음"
+    bday_tooltip = re.sub('<[^<]+?>', '', bday_detail).replace('&nbsp;', ' ').strip() if bday_count > 0 else "금주 생일자 없음"
 
     alert_html = f'''
     <style>
@@ -361,7 +347,7 @@ with col_alerts:
         border-radius: 16px;
         font-size: 12px;
         font-weight: 600;
-        cursor: default;
+        cursor: help;
         transition: all 0.2s ease;
         white-space: nowrap;
     }}
@@ -392,17 +378,11 @@ with col_alerts:
     }}
     </style>
     <div class="alert-container">
-        <div class="alert-badge-wrapper">
-            <div class="alert-badge {'warning' if absent_count > 0 else 'success'}">
-                {'⚠️' if absent_count > 0 else '✓'} 3주 연속 결석 {absent_count}명
-            </div>
-            {absent_popover}
+        <div class="alert-badge {'warning' if absent_count > 0 else 'success'}" title="{absent_tooltip}">
+            {'⚠️' if absent_count > 0 else '✓'} 3주 연속 결석 {absent_count}명
         </div>
-        <div class="alert-badge-wrapper">
-            <div class="alert-badge {'info' if bday_count > 0 else 'success'}">
-                {'🎂' if bday_count > 0 else '✓'} 금주 생일 {bday_count}명
-            </div>
-            {bday_popover}
+        <div class="alert-badge {'info' if bday_count > 0 else 'success'}" title="{bday_tooltip}">
+            {'🎂' if bday_count > 0 else '✓'} 금주 생일 {bday_count}명
         </div>
     </div>
     '''

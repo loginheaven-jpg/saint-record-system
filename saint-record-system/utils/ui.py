@@ -704,63 +704,6 @@ def load_custom_css():
             padding-bottom: 12px;
         }
 
-        /* 알림 배지 팝오버 스타일 */
-        .alert-badge-wrapper {
-            position: relative;
-            display: inline-block;
-        }
-
-        .alert-popover {
-            position: absolute;
-            bottom: calc(100% + 12px);
-            left: 50%;
-            transform: translateX(-50%);
-            background: white;
-            border-radius: 12px;
-            padding: 16px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-            z-index: 1000;
-            min-width: 260px;
-            max-width: 320px;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-            pointer-events: none;
-        }
-
-        .alert-badge-wrapper:hover .alert-popover {
-            opacity: 1;
-            visibility: visible;
-            transform: translateX(-50%) translateY(-4px);
-            pointer-events: auto;
-        }
-
-        .alert-popover::after {
-            content: '';
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            border: 8px solid transparent;
-            border-top-color: white;
-        }
-
-        .alert-popover-title {
-            font-size: 13px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #E8E4DF;
-        }
-
-        .alert-popover-content {
-            font-size: 12px;
-            color: #5D4037;
-            line-height: 1.6;
-            max-height: 180px;
-            overflow-y: auto;
-        }
-
         .dept-container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);  /* 기본: 4x1 */
