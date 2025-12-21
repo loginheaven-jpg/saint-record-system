@@ -186,7 +186,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.25"  # 날짜 박스 popover 방식
+APP_VERSION = "v3.26"  # 대시보드 제목 + 날짜박스 같은 행
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -440,8 +440,16 @@ alerts_html = f'''
 '''
 st.markdown(alerts_html, unsafe_allow_html=True)
 
-# 메인 행: 우측에 날짜+새로고침만 배치 (목업과 일치)
-col_spacer, col_date_box, col_refresh = st.columns([3, 1.2, 0.5])
+# 메인 행: 대시보드(좌) + 날짜박스 + 새로고침(우) - 같은 행
+col_title, col_spacer, col_date_box, col_refresh = st.columns([1.5, 1.5, 1.2, 0.5])
+
+with col_title:
+    st.markdown('''
+    <div class="title-section">
+        <h1>대시보드</h1>
+        <p>예봄교회 성도 현황</p>
+    </div>
+    ''', unsafe_allow_html=True)
 
 with col_date_box:
     # 날짜 박스 (popover로 클릭 시 날짜 선택)

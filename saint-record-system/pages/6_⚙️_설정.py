@@ -141,7 +141,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # 앱 버전 (app.py와 동일)
-APP_VERSION = "v3.25"
+APP_VERSION = "v3.26"
 
 # 시스템 정보 섹션
 st.markdown("""
