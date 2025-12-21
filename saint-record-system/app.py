@@ -232,92 +232,101 @@ render_shared_sidebar("dashboard")
 # 출석 테이블 CSS 로드
 st.markdown(get_attendance_table_css(), unsafe_allow_html=True)
 
-# 헤더 CSS (Option C: 2-tier 레이아웃)
+# 헤더 CSS (Option C: 목업 100% 일치)
 st.markdown("""
 <style>
-/* Option C 헤더 레이아웃 */
-.header-new-c {
+/* Option C 헤더 - 목업과 100% 일치 */
+.header-option-c {
     position: relative;
     margin-bottom: 8px;
 }
 
-/* 상단 알림 (우측 상단 고정) */
-.header-new-c .alerts-float {
-    position: absolute;
-    top: 0;
-    right: 0;
+/* 알림 영역 (우측 상단 floating) */
+.alerts-float {
     display: flex;
+    justify-content: flex-end;
     gap: 16px;
+    margin-bottom: 8px;
 }
-.header-new-c .alert-inline {
+.alert-inline {
     display: flex;
     align-items: center;
     gap: 6px;
     font-size: 12px;
     color: #6B7B8C;
     cursor: help;
-    padding: 2px 0;
 }
-.header-new-c .alert-inline:hover {
-    color: #2C3E50;
-}
-.header-new-c .alert-inline .dot {
+.alert-inline:hover { color: #2C3E50; }
+.alert-inline .dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
 }
-.header-new-c .alert-inline .dot.warning { background: #E65100; }
-.header-new-c .alert-inline .dot.info { background: #F9A825; }
-.header-new-c .alert-inline .label {
-    font-weight: 500;
-}
-.header-new-c .alert-inline .count {
+.alert-inline .dot.warning { background: #E65100; }
+.alert-inline .dot.info { background: #F9A825; }
+.alert-inline .label { font-weight: 500; }
+.alert-inline .count {
     font-weight: 700;
     font-family: 'Playfair Display', serif;
 }
-.header-new-c .alert-inline .count.warning { color: #E65100; }
-.header-new-c .alert-inline .count.info { color: #F57F17; }
+.alert-inline .count.warning { color: #E65100; }
+.alert-inline .count.info { color: #F57F17; }
 
-/* 메인: 제목 */
-.header-new-c .main-row {
-    padding-top: 24px;
+/* 제목 영역 */
+.title-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: 100%;
 }
-.header-new-c .title-section h1 {
+.title-section h1 {
     font-family: 'Playfair Display', serif;
     font-size: 28px;
     font-weight: 600;
     color: #2C3E50;
-    margin-bottom: 2px;
+    margin: 0 0 2px 0;
+    line-height: 1.2;
 }
-.header-new-c .title-section p {
+.title-section p {
     font-size: 12px;
     color: #6B7B8C;
     margin: 0;
 }
 
-/* 컨트롤 영역 스타일 */
-.date-label-box {
+/* 날짜 표시 박스 */
+.date-display-box {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 0;
+    gap: 10px;
+    padding: 10px 16px;
+    background: white;
+    border: 1px solid #E8E4DF;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
-.date-label-box .icon {
-    font-size: 16px;
-}
-.date-label-box .label {
-    font-size: 11px;
+.date-display-box .icon { font-size: 18px; color: #C9A962; }
+.date-display-box .info { display: flex; flex-direction: column; }
+.date-display-box .label {
+    font-size: 10px;
     color: #6B7B8C;
-    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.date-display-box .value {
+    font-size: 15px;
+    font-weight: 600;
+    color: #2C3E50;
 }
 
+/* 구분선 */
 .ctrl-divider {
     width: 1px;
-    height: 28px;
+    height: 32px;
     background: #E8E4DF;
-    margin: 0 auto;
+    margin: 0 4px;
 }
 
+/* 새로고침 영역 */
 .refresh-area {
     display: flex;
     flex-direction: column;
@@ -329,29 +338,51 @@ st.markdown("""
     color: #6B7B8C;
 }
 
-/* 컨트롤 컬럼 세로 정렬 */
-div[data-testid="column"]:has(.date-label-box),
-div[data-testid="column"]:has(.ctrl-divider),
-div[data-testid="column"]:has(.refresh-area) {
+/* 메인 행 컬럼 정렬 - 세로 가운데/하단 정렬 */
+.main-row-cols [data-testid="column"] {
     display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
+    align-items: flex-end !important;
+}
+.main-row-cols [data-testid="column"]:has(.date-display-box),
+.main-row-cols [data-testid="column"]:has(.ctrl-divider),
+.main-row-cols [data-testid="column"]:has(.refresh-area) {
     align-items: center !important;
+    justify-content: flex-start !important;
 }
 
-/* Streamlit date_input 스타일 */
-div[data-testid="column"]:has(.date-label-box) + div[data-testid="column"] input {
-    background: white !important;
-    border: 1px solid #E8E4DF !important;
-    border-radius: 10px !important;
-    padding: 8px 12px !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-    color: #2C3E50 !important;
+/* 날짜 컬럼 - 박스와 date_input 오버레이 */
+.main-row-cols [data-testid="column"]:has(.date-display-box) {
+    position: relative;
+}
+.main-row-cols [data-testid="column"]:has(.date-display-box) [data-testid="stDateInput"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0;
+    width: 100%;
+    cursor: pointer;
+}
+.main-row-cols [data-testid="column"]:has(.date-display-box) [data-testid="stDateInput"] > div {
+    height: 100%;
+}
+.main-row-cols [data-testid="column"]:has(.date-display-box) [data-testid="stDateInput"] input {
+    height: 100%;
+    cursor: pointer;
+}
+/* 박스에 hover 효과 */
+.date-display-box {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.date-display-box:hover {
+    border-color: #C9A962;
+    box-shadow: 0 4px 12px rgba(201, 169, 98, 0.15);
 }
 
-/* Streamlit 새로고침 버튼 스타일 */
-div[data-testid="column"]:has(.refresh-area) button {
+/* 새로고침 버튼 스타일 */
+.refresh-col button[data-testid="stBaseButton-secondary"] {
     width: 40px !important;
     height: 40px !important;
     min-width: 40px !important;
@@ -363,15 +394,12 @@ div[data-testid="column"]:has(.refresh-area) button {
     font-size: 18px !important;
     box-shadow: 0 4px 12px rgba(201, 169, 98, 0.3) !important;
     transition: all 0.2s ease !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
 }
-div[data-testid="column"]:has(.refresh-area) button:hover {
+.refresh-col button[data-testid="stBaseButton-secondary"]:hover {
     transform: translateY(-2px) !important;
     box-shadow: 0 6px 16px rgba(201, 169, 98, 0.4) !important;
 }
-div[data-testid="column"]:has(.refresh-area) button p {
+.refresh-col button p {
     margin: 0 !important;
     line-height: 1 !important;
 }
@@ -424,43 +452,47 @@ weekday_names = ['월', '화', '수', '목', '금', '토', '일']
 weekday = weekday_names[st.session_state.selected_sunday.weekday()]
 date_str = f"{st.session_state.selected_sunday.year}. {st.session_state.selected_sunday.month}. {st.session_state.selected_sunday.day} ({weekday})"
 
-# Option C 헤더 (HTML - 알림 + 제목만, 컨트롤은 Streamlit 위젯으로)
-header_html = f'''
-<div class="header-new-c">
-    <div class="alerts-float">
-        <div class="alert-inline" title="{absent_tooltip}">
-            <span class="dot warning"></span>
-            <span class="label">3주 결석</span>
-            <span class="count warning">{absent_count}명</span>
-        </div>
-        <div class="alert-inline" title="{bday_tooltip}">
-            <span class="dot info"></span>
-            <span class="label">금주 생일</span>
-            <span class="count info">{bday_count}명</span>
-        </div>
+# Option C 헤더 - 알림 (상단 우측)
+alerts_html = f'''
+<div class="alerts-float">
+    <div class="alert-inline" title="{absent_tooltip}">
+        <span class="dot warning"></span>
+        <span class="label">3주 결석</span>
+        <span class="count warning">{absent_count}명</span>
     </div>
-    <div class="main-row">
-        <div class="title-section">
-            <h1>대시보드</h1>
-            <p>예봄교회 성도 현황</p>
-        </div>
+    <div class="alert-inline" title="{bday_tooltip}">
+        <span class="dot info"></span>
+        <span class="label">금주 생일</span>
+        <span class="count info">{bday_count}명</span>
     </div>
 </div>
 '''
-st.markdown(header_html, unsafe_allow_html=True)
+st.markdown(alerts_html, unsafe_allow_html=True)
 
-# 컨트롤 영역 (날짜 선택 + 새로고침) - 우측 정렬
-col_spacer, col_date_label, col_date_picker, col_divider, col_refresh = st.columns([2.5, 0.5, 1, 0.1, 0.5])
+# 메인 행: 제목(좌) + 컨트롤(우) - 같은 행에 배치
+st.markdown('<div class="main-row-cols">', unsafe_allow_html=True)
+col_title, col_spacer, col_date, col_divider, col_refresh = st.columns([1.8, 0.5, 1.2, 0.15, 0.6])
 
-with col_date_label:
-    st.markdown(f'''
-    <div class="date-label-box">
-        <span class="icon">📅</span>
-        <span class="label">기준일</span>
+with col_title:
+    st.markdown('''
+    <div class="title-section">
+        <h1>대시보드</h1>
+        <p>예봄교회 성도 현황</p>
     </div>
     ''', unsafe_allow_html=True)
 
-with col_date_picker:
+with col_date:
+    # 날짜 표시 박스 (아이콘 + 라벨 + 값)
+    st.markdown(f'''
+    <div class="date-display-box">
+        <span class="icon">📅</span>
+        <div class="info">
+            <span class="label">기준일</span>
+            <span class="value">{date_str}</span>
+        </div>
+    </div>
+    ''', unsafe_allow_html=True)
+    # 숨겨진 날짜 선택기 (박스 클릭 시 활성화 - CSS로 오버레이)
     selected_date = st.date_input(
         "기준일",
         value=st.session_state.selected_sunday,
@@ -477,6 +509,7 @@ with col_divider:
     st.markdown('<div class="ctrl-divider"></div>', unsafe_allow_html=True)
 
 with col_refresh:
+    st.markdown('<div class="refresh-col">', unsafe_allow_html=True)
     st.markdown(f'<div class="refresh-area"><span class="cache-time">{cache_info}</span></div>', unsafe_allow_html=True)
     if st.button("🔄", key="refresh_btn", help="데이터 새로고침"):
         fetch_dashboard_data_from_api.clear()
@@ -485,7 +518,9 @@ with col_refresh:
         st.session_state['dashboard_data_loaded'] = False
         st.session_state['dashboard_cache_time'] = 0
         st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
+st.markdown('</div>', unsafe_allow_html=True)
 st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
 # 통계 데이터 계산

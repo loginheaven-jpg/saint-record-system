@@ -141,7 +141,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # 앱 버전 (app.py와 동일)
-APP_VERSION = "v3.22"
+APP_VERSION = "v3.23"
 
 # 시스템 정보 섹션
 st.markdown("""
@@ -229,6 +229,15 @@ st.markdown("""
 # 버전 히스토리
 with st.expander("📋 버전 히스토리"):
     st.markdown("""
+    **v3.23** - 헤더 레이아웃 완전 수정
+    - 제목 + 날짜박스 + 새로고침을 같은 행에 배치
+    - 알림: 상단 우측에 floating 배치
+    - 날짜박스: 📅 아이콘 + 기준일 라벨 + 날짜 값
+    - 클릭 시 날짜 선택 가능 (date_input 오버레이)
+
+    **v3.22** - 헤더 날짜 중복 제거
+    - HTML 날짜 표시 제거 (Streamlit date_input만 사용)
+
     **v3.21** - 헤더 UI Option C 100% 일치
     - HTML 목업과 완전 동일한 스타일 적용
     - 알림: "3주 결석" + 컬러 숫자 (주황/노랑)
