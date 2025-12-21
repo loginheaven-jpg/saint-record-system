@@ -184,7 +184,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.12"  # 알림 배지 완전 재구현 (Material Icons 의존성 제거)
+APP_VERSION = "v3.14"  # 기본 메뉴 비활성화 + 버전 표시 추가
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -263,6 +263,9 @@ def render_sidebar():
 
         # 푸터
         st.markdown('<div style="margin-top:auto;padding:1.5rem 1rem;border-top:1px solid rgba(255,255,255,0.1);"><div style="display:flex;align-items:center;gap:12px;"><div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#8B7355 0%,#C9A962 100%);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:white;">교</div><div><div style="font-size:14px;font-weight:500;color:white;">교적담당자</div><div style="font-size:12px;color:rgba(255,255,255,0.5);">관리자</div></div></div></div>', unsafe_allow_html=True)
+
+        # 버전 표시 (사이드바 하단)
+        st.markdown(f'<div style="text-align:center;padding:8px;font-size:11px;color:rgba(255,255,255,0.4);">{APP_VERSION}</div>', unsafe_allow_html=True)
 
 render_sidebar()
 

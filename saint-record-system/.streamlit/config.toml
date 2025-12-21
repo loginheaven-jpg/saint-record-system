@@ -12,3 +12,7 @@ port = 8501
 
 [runner]
 magicEnabled = false
+
+[client]
+showSidebarNavigation = false
+toolbarMode = "minimal"
