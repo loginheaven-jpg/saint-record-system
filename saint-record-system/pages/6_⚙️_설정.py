@@ -141,7 +141,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # 앱 버전 (app.py와 동일)
-APP_VERSION = "v3.19"
+APP_VERSION = "v3.20"
 
 # 시스템 정보 섹션
 st.markdown("""
@@ -229,6 +229,12 @@ st.markdown("""
 # 버전 히스토리
 with st.expander("📋 버전 히스토리"):
     st.markdown("""
+    **v3.20** - 헤더 UI 개선 (Option C)
+    - 2-tier 레이아웃: 알림 상단 우측, 제목/날짜 하단
+    - 알림 표시: 점(dot) + 텍스트 (박스 제거)
+    - 날짜 표시: 아이콘 + 라벨 + 값 통합 박스
+    - 새로고침 버튼: 골드 그라데이션 스타일
+
     **v3.19** - 공유 사이드바 구현
     - 모든 페이지에서 네비게이션 유지
     - 페이지 이동 시 사이드바 깜빡임 제거

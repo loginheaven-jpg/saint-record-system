@@ -186,7 +186,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.19"  # 공유 사이드바 구현 (모든 페이지에서 네비게이션 유지)
+APP_VERSION = "v3.20"  # 헤더 UI 개선 (Option C: 2-tier 레이아웃, 알림 플로팅)
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -232,18 +232,64 @@ render_shared_sidebar("dashboard")
 # 출석 테이블 CSS 로드
 st.markdown(get_attendance_table_css(), unsafe_allow_html=True)
 
-# 헤더 정렬 CSS
+# 헤더 CSS (Option C: 2-tier 레이아웃)
 st.markdown("""
 <style>
-/* 헤더 컬럼 세로 중앙 정렬 */
-div[data-testid="column"]:has(.header-title),
-div[data-testid="column"]:has(.header-date),
-div[data-testid="column"]:has(.alert-container),
-div[data-testid="column"]:has(.header-refresh) {
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-    min-height: 70px;
+/* Option C 헤더 레이아웃 */
+.header-wrapper {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+/* 상단 알림 영역 (우측 상단 플로팅) */
+.alerts-float {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: flex;
+    gap: 20px;
+    z-index: 10;
+}
+.alert-inline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #6B7B8C;
+    cursor: help;
+    transition: color 0.2s ease;
+}
+.alert-inline:hover {
+    color: #2C3E50;
+}
+.alert-inline .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.alert-inline .dot.warning {
+    background: #E65100;
+    box-shadow: 0 0 6px rgba(230, 81, 0, 0.4);
+}
+.alert-inline .dot.info {
+    background: #F57F17;
+    box-shadow: 0 0 6px rgba(245, 127, 23, 0.4);
+}
+.alert-inline .dot.success {
+    background: #2E7D32;
+}
+.alert-inline .count {
+    font-weight: 600;
+    color: #2C3E50;
+}
+
+/* 메인 행 (제목 + 날짜/새로고침) */
+.header-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 8px;
 }
 .header-title h1 {
     font-family: 'Playfair Display', serif;
@@ -258,46 +304,160 @@ div[data-testid="column"]:has(.header-refresh) {
     color: #6B7B8C;
     margin: 4px 0 0 0;
 }
-.header-date {
+
+/* 우측 컨트롤 영역 */
+.header-controls {
     display: flex;
-    flex-direction: column;
-    justify-content: center;
+    align-items: center;
+    gap: 16px;
 }
-.header-date-label {
-    font-size: 10px;
+.date-display {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #F8F6F3;
+    padding: 10px 16px;
+    border-radius: 12px;
+    border: 1px solid #E8E4DF;
+}
+.date-display .icon {
+    font-size: 18px;
+}
+.date-display .label {
+    font-size: 11px;
     color: #6B7B8C;
-    margin-bottom: 2px;
+    line-height: 1;
 }
-.header-refresh {
+.date-display .value {
+    font-size: 15px;
+    font-weight: 600;
+    color: #2C3E50;
+    line-height: 1.2;
+}
+.refresh-wrap {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    gap: 4px;
 }
-.header-refresh-time {
-    font-size: 11px;
+.refresh-time {
+    font-size: 10px;
     color: #6B7B8C;
-    text-align: center;
-    margin-bottom: 4px;
+}
+
+/* Streamlit 버튼 스타일 오버라이드 (새로고침) */
+div[data-testid="column"]:has(.refresh-wrap) button {
+    background: linear-gradient(135deg, #C9A962 0%, #B8954F 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 8px 16px !important;
+    box-shadow: 0 2px 8px rgba(201, 169, 98, 0.3) !important;
+    transition: all 0.2s ease !important;
+}
+div[data-testid="column"]:has(.refresh-wrap) button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(201, 169, 98, 0.4) !important;
+}
+
+/* 날짜 선택 컬럼 정렬 */
+div[data-testid="column"]:has(.date-picker-col) {
+    display: flex !important;
+    align-items: center !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# 헤더 (제목 + 날짜 + 알림 + 새로고침)
-col_title, col_date, col_alerts, col_refresh = st.columns([1.5, 1, 2, 0.5])
+# 알림 데이터 준비
+absent_list = dashboard_data.get('absent_3weeks', [])
+birthdays = dashboard_data.get('birthdays', [])
+absent_count = len(absent_list)
+bday_count = len(birthdays)
 
-with col_title:
-    st.markdown('''
-    <div class="header-title">
-        <h1>대시보드</h1>
-        <p>예봄교회 성도 현황</p>
+# 결석자 상세 목록 생성 (툴팁용)
+absent_detail = ""
+if absent_count > 0:
+    dept_absent = {}
+    for m in absent_list:
+        dept = m.get('dept_name', '기타')
+        if dept not in dept_absent:
+            dept_absent[dept] = []
+        dept_absent[dept].append(m['name'])
+    for dept, names in dept_absent.items():
+        absent_detail += f"{dept} ({len(names)}명): {', '.join(names)}. "
+
+# 생일자 상세 목록 생성 (툴팁용)
+bday_detail = ""
+if bday_count > 0:
+    dept_bday = {}
+    for b in birthdays:
+        dept = b.get('dept_name', '기타')
+        if dept not in dept_bday:
+            dept_bday[dept] = []
+        dept_bday[dept].append(f"{b['name']} ({b['birth_date']})")
+    for dept, names in dept_bday.items():
+        bday_detail += f"{dept} ({len(names)}명): {', '.join(names)}. "
+
+absent_tooltip = absent_detail.strip() if absent_count > 0 else "결석자 없음"
+bday_tooltip = bday_detail.strip() if bday_count > 0 else "금주 생일자 없음"
+
+# 캐시 시간 계산
+cache_time = st.session_state.get('dashboard_cache_time', 0)
+if cache_time > 0:
+    cache_age_min = int((time.time() - cache_time) / 60)
+    cache_info = f"{cache_age_min}분 전" if cache_age_min < 60 else f"{cache_age_min // 60}시간 전"
+else:
+    cache_info = "최신"
+
+# 날짜 포맷
+weekday_names = ['월', '화', '수', '목', '금', '토', '일']
+weekday = weekday_names[st.session_state.selected_sunday.weekday()]
+date_str = f"{st.session_state.selected_sunday.month}월 {st.session_state.selected_sunday.day}일 ({weekday})"
+
+# Option C 헤더 (HTML 부분 - 알림 + 제목)
+alert_dot_class_absent = 'warning' if absent_count > 0 else 'success'
+alert_dot_class_bday = 'info' if bday_count > 0 else 'success'
+
+header_html = f'''
+<div class="header-wrapper">
+    <div class="alerts-float">
+        <div class="alert-inline" title="{absent_tooltip}">
+            <span class="dot {alert_dot_class_absent}"></span>
+            3주 연속 결석 <span class="count">{absent_count}명</span>
+        </div>
+        <div class="alert-inline" title="{bday_tooltip}">
+            <span class="dot {alert_dot_class_bday}"></span>
+            금주 생일 <span class="count">{bday_count}명</span>
+        </div>
+    </div>
+    <div class="header-main">
+        <div class="header-title">
+            <h1>대시보드</h1>
+            <p>예봄교회 성도 현황</p>
+        </div>
+    </div>
+</div>
+'''
+st.markdown(header_html, unsafe_allow_html=True)
+
+# 컨트롤 영역 (날짜 선택 + 새로고침) - Streamlit 위젯 사용
+col_spacer, col_date_display, col_date_picker, col_refresh = st.columns([3, 1.2, 1, 0.6])
+
+with col_date_display:
+    st.markdown(f'''
+    <div class="date-display">
+        <span class="icon">📅</span>
+        <div>
+            <div class="label">기준 날짜</div>
+            <div class="value">{date_str}</div>
+        </div>
     </div>
     ''', unsafe_allow_html=True)
 
-with col_date:
-    st.markdown('<div class="header-date"><span class="header-date-label">기준 날짜</span></div>', unsafe_allow_html=True)
+with col_date_picker:
+    st.markdown('<div class="date-picker-col"></div>', unsafe_allow_html=True)
     selected_date = st.date_input(
-        "기준 날짜",
+        "날짜 변경",
         value=st.session_state.selected_sunday,
         label_visibility="collapsed",
         key="date_selector"
@@ -308,105 +468,9 @@ with col_date:
         st.session_state.selected_sunday = new_sunday
         st.rerun()
 
-    if selected_date.weekday() != 6:
-        st.caption(f"→ {new_sunday.strftime('%m/%d')}(일)")
-
-with col_alerts:
-    # 알림 배지 (결석자, 생일자) - 커스텀 HTML 배지
-    absent_list = dashboard_data.get('absent_3weeks', [])
-    birthdays = dashboard_data.get('birthdays', [])
-    absent_count = len(absent_list)
-    bday_count = len(birthdays)
-
-    # 결석자 상세 목록 생성
-    absent_detail = ""
-    if absent_count > 0:
-        dept_absent = {}
-        for m in absent_list:
-            dept = m.get('dept_name', '기타')
-            if dept not in dept_absent:
-                dept_absent[dept] = []
-            dept_absent[dept].append(m['name'])
-        for dept, names in dept_absent.items():
-            absent_detail += f"<div style='margin-bottom:4px;'><strong>{dept}</strong> ({len(names)}명): {', '.join(names)}</div>"
-
-    # 생일자 상세 목록 생성
-    bday_detail = ""
-    if bday_count > 0:
-        dept_bday = {}
-        for b in birthdays:
-            dept = b.get('dept_name', '기타')
-            if dept not in dept_bday:
-                dept_bday[dept] = []
-            dept_bday[dept].append(f"{b['name']} ({b['birth_date']})")
-        for dept, names in dept_bday.items():
-            bday_detail += f"<div style='margin-bottom:4px;'><strong>{dept}</strong> ({len(names)}명): {', '.join(names)}</div>"
-
-    # 알림 배지 HTML (title 속성으로 네이티브 툴팁)
-    # HTML 태그 제거한 순수 텍스트 툴팁
-    absent_tooltip = re.sub('<[^<]+?>', '', absent_detail).replace('&nbsp;', ' ').strip() if absent_count > 0 else "결석자 없음"
-    bday_tooltip = re.sub('<[^<]+?>', '', bday_detail).replace('&nbsp;', ' ').strip() if bday_count > 0 else "금주 생일자 없음"
-
-    alert_html = f'''
-    <style>
-    .alert-badge {{
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 12px;
-        border-radius: 16px;
-        font-size: 12px;
-        font-weight: 600;
-        cursor: help;
-        transition: all 0.2s ease;
-        white-space: nowrap;
-    }}
-    .alert-badge.warning {{
-        background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
-        color: #E65100;
-        border: 1px solid #FFB74D;
-    }}
-    .alert-badge.info {{
-        background: linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%);
-        color: #F57F17;
-        border: 1px solid #FFD54F;
-    }}
-    .alert-badge.success {{
-        background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
-        color: #2E7D32;
-        border: 1px solid #81C784;
-    }}
-    .alert-badge:hover {{
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }}
-    .alert-container {{
-        display: flex;
-        flex-wrap: nowrap;
-        gap: 12px;
-        align-items: center;
-    }}
-    </style>
-    <div class="alert-container">
-        <div class="alert-badge {'warning' if absent_count > 0 else 'success'}" title="{absent_tooltip}">
-            {'⚠️' if absent_count > 0 else '✓'} 3주 연속 결석 {absent_count}명
-        </div>
-        <div class="alert-badge {'info' if bday_count > 0 else 'success'}" title="{bday_tooltip}">
-            {'🎂' if bday_count > 0 else '✓'} 금주 생일 {bday_count}명
-        </div>
-    </div>
-    '''
-    st.markdown(alert_html, unsafe_allow_html=True)
-
 with col_refresh:
-    cache_time = st.session_state.get('dashboard_cache_time', 0)
-    if cache_time > 0:
-        cache_age_min = int((time.time() - cache_time) / 60)
-        cache_info = f"{cache_age_min}분 전" if cache_age_min < 60 else f"{cache_age_min // 60}시간 전"
-    else:
-        cache_info = "최신"
-    st.markdown(f'<div class="header-refresh"><span class="header-refresh-time">{cache_info}</span></div>', unsafe_allow_html=True)
-    if st.button("🔄", key="refresh_btn", help="데이터 새로고침", use_container_width=True):
+    st.markdown(f'<div class="refresh-wrap"><span class="refresh-time">{cache_info}</span></div>', unsafe_allow_html=True)
+    if st.button("🔄 새로고침", key="refresh_btn", help="데이터 새로고침", use_container_width=True):
         fetch_dashboard_data_from_api.clear()
         clear_sheets_cache()
         st.session_state['force_refresh'] = True
@@ -414,7 +478,7 @@ with col_refresh:
         st.session_state['dashboard_cache_time'] = 0
         st.rerun()
 
-st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
 # 통계 데이터 계산
 val_total = 0
