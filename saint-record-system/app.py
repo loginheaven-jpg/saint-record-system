@@ -185,7 +185,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.17"  # 알림 배지 hover 툴팁 수정 (네이티브 title 속성)
+APP_VERSION = "v3.18"  # 헤더 정렬 개선 (flexbox 세로 중앙 정렬)
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -277,15 +277,70 @@ render_sidebar()
 # 출석 테이블 CSS 로드
 st.markdown(get_attendance_table_css(), unsafe_allow_html=True)
 
+# 헤더 정렬 CSS
+st.markdown("""
+<style>
+/* 헤더 컬럼 세로 중앙 정렬 */
+div[data-testid="column"]:has(.header-title),
+div[data-testid="column"]:has(.header-date),
+div[data-testid="column"]:has(.alert-container),
+div[data-testid="column"]:has(.header-refresh) {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    min-height: 70px;
+}
+.header-title h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: #2C3E50;
+    margin: 0;
+    line-height: 1.2;
+}
+.header-title p {
+    font-size: 12px;
+    color: #6B7B8C;
+    margin: 4px 0 0 0;
+}
+.header-date {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.header-date-label {
+    font-size: 10px;
+    color: #6B7B8C;
+    margin-bottom: 2px;
+}
+.header-refresh {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.header-refresh-time {
+    font-size: 11px;
+    color: #6B7B8C;
+    text-align: center;
+    margin-bottom: 4px;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # 헤더 (제목 + 날짜 + 알림 + 새로고침)
-col_title, col_date, col_alerts, col_refresh = st.columns([1.6, 0.8, 2, 0.6])
+col_title, col_date, col_alerts, col_refresh = st.columns([1.5, 1, 2, 0.5])
 
 with col_title:
-    st.markdown('<h1 style="font-family:Playfair Display,serif;font-size:32px;font-weight:600;color:#2C3E50;margin:0 0 4px 0;">대시보드</h1><p style="font-size:13px;color:#6B7B8C;margin:0;">예봄교회 성도 현황</p>', unsafe_allow_html=True)
+    st.markdown('''
+    <div class="header-title">
+        <h1>대시보드</h1>
+        <p>예봄교회 성도 현황</p>
+    </div>
+    ''', unsafe_allow_html=True)
 
 with col_date:
-    # 날짜 선택 UI
-    st.markdown('<p style="font-size:10px;color:#6B7B8C;margin:0 0 2px 0;">기준 날짜</p>', unsafe_allow_html=True)
+    st.markdown('<div class="header-date"><span class="header-date-label">기준 날짜</span></div>', unsafe_allow_html=True)
     selected_date = st.date_input(
         "기준 날짜",
         value=st.session_state.selected_sunday,
@@ -299,7 +354,7 @@ with col_date:
         st.rerun()
 
     if selected_date.weekday() != 6:
-        st.caption(f"⚠️ {new_sunday.strftime('%m/%d')}(일)로 조정됨")
+        st.caption(f"→ {new_sunday.strftime('%m/%d')}(일)")
 
 with col_alerts:
     # 알림 배지 (결석자, 생일자) - 커스텀 HTML 배지
@@ -395,8 +450,8 @@ with col_refresh:
         cache_info = f"{cache_age_min}분 전" if cache_age_min < 60 else f"{cache_age_min // 60}시간 전"
     else:
         cache_info = "최신"
-    st.markdown(f'<p style="font-size:11px;color:#6B7B8C;text-align:center;margin:4px 0 2px 0;font-weight:500;">{cache_info}</p>', unsafe_allow_html=True)
-    if st.button("🔄", key="refresh_btn", help="데이터 새로고침"):
+    st.markdown(f'<div class="header-refresh"><span class="header-refresh-time">{cache_info}</span></div>', unsafe_allow_html=True)
+    if st.button("🔄", key="refresh_btn", help="데이터 새로고침", use_container_width=True):
         fetch_dashboard_data_from_api.clear()
         clear_sheets_cache()
         st.session_state['force_refresh'] = True
