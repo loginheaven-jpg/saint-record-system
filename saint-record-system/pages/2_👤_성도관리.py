@@ -235,15 +235,20 @@ def get_relationship_badge(rel):
     }
     return badge_map.get(rel, 'badge-other')
 
-# 헤더
-st.markdown("""
-<div class="page-header">
-    <div>
-        <h1>👤 성도 관리</h1>
-        <p>성도 정보를 조회하고 관리합니다. 행을 클릭하면 상세 정보를 수정할 수 있습니다.</p>
+# 헤더 (대시보드 돌아가기 버튼 포함)
+col_back, col_title = st.columns([1, 11])
+with col_back:
+    if st.button("← 대시보드", key="back_to_dashboard", use_container_width=True):
+        st.switch_page("app.py")
+with col_title:
+    st.markdown("""
+    <div class="page-header">
+        <div>
+            <h1>👤 성도 관리</h1>
+            <p>성도 정보를 조회하고 관리합니다. 성도를 선택하면 상세 정보를 수정할 수 있습니다.</p>
+        </div>
     </div>
-</div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 if db_connected:
     with st.spinner("📊 데이터를 불러오는 중..."):
@@ -315,6 +320,29 @@ if db_connected:
             st.markdown(f'<div class="mini-stat"><div class="mini-stat-value">{len(departments) if not departments.empty else 0}</div><div class="mini-stat-label">부서</div></div>', unsafe_allow_html=True)
         with stat_cols[3]:
             st.markdown(f'<div class="mini-stat"><div class="mini-stat-value">{len(groups) if not groups.empty else 0}</div><div class="mini-stat-label">목장</div></div>', unsafe_allow_html=True)
+
+        st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
+
+        # 성도 선택 (테이블 위에 배치)
+        if not members.empty:
+            member_names = members['name'].tolist()
+            member_ids = members['member_id'].tolist()
+
+            def on_member_select():
+                sel = st.session_state.select_member_top
+                if sel != '선택하세요':
+                    idx = member_names.index(sel)
+                    member_id = member_ids[idx]
+                    member_row = members[members['member_id'] == member_id].iloc[0]
+                    st.session_state.selected_member = member_row.to_dict()
+                    st.session_state.show_detail = True
+
+            selected_name = st.selectbox(
+                "📝 수정할 성도 선택",
+                ['선택하세요'] + member_names,
+                key="select_member_top",
+                on_change=on_member_select
+            )
 
         st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
 
@@ -679,87 +707,6 @@ if db_connected:
             row_count = len(members)
             table_height = min(600, 50 + row_count * 40)  # 헤더 50px + 행당 40px
             components.html(full_html, height=table_height, scrolling=True)
-
-            # 성도 선택 (Streamlit selectbox 방식) - 선택 시 바로 세부화면 표시
-            st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
-
-            member_names = members['name'].tolist()
-            member_ids = members['member_id'].tolist()
-
-            def on_member_select():
-                sel = st.session_state.select_member
-                if sel != '선택하세요':
-                    idx = member_names.index(sel)
-                    member_id = member_ids[idx]
-                    member_row = members[members['member_id'] == member_id].iloc[0]
-                    st.session_state.selected_member = member_row.to_dict()
-                    st.session_state.show_detail = True
-
-            selected_name = st.selectbox(
-                "📝 성도를 선택하면 상세 정보를 볼 수 있습니다",
-                ['선택하세요'] + member_names,
-                key="select_member",
-                on_change=on_member_select
-            )
-
-            # 선택된 성도가 있으면 세부화면 표시
-            if st.session_state.get('show_detail') and st.session_state.get('selected_member'):
-                sel_member = st.session_state.selected_member
-                st.markdown("---")
-                st.markdown(f"### 📋 {sel_member.get('name', '')} 님 상세 정보")
-
-                # 세부 정보 수정 폼
-                with st.form("edit_member_form"):
-                    c1, c2, c3, c4 = st.columns(4)
-                    with c1:
-                        edit_name = st.text_input("이름", value=sel_member.get('name', ''))
-                    with c2:
-                        edit_gender = st.selectbox("성별", ['남', '여'], index=0 if sel_member.get('gender') == '남' else 1)
-                    with c3:
-                        rel_options = [r.value for r in Relationship]
-                        rel_idx = rel_options.index(sel_member.get('relationship', '기타')) if sel_member.get('relationship') in rel_options else len(rel_options) - 1
-                        edit_relationship = st.selectbox("관계", rel_options, index=rel_idx)
-                    with c4:
-                        edit_phone = st.text_input("전화번호", value=sel_member.get('phone', ''))
-
-                    c1, c2 = st.columns(2)
-                    with c1:
-                        edit_address = st.text_input("주소", value=str(sel_member.get('address', '')) if sel_member.get('address') else '')
-                    with c2:
-                        role_options = [r.value for r in ChurchRole]
-                        role_idx = role_options.index(sel_member.get('church_role', '성도')) if sel_member.get('church_role') in role_options else len(role_options) - 1
-                        edit_role = st.selectbox("직분", role_options, index=role_idx)
-
-                    col_btn1, col_btn2, col_btn3 = st.columns([2, 1, 1])
-                    with col_btn1:
-                        submitted = st.form_submit_button("💾 저장", use_container_width=True, type="primary")
-                    with col_btn2:
-                        if st.form_submit_button("❌ 닫기", use_container_width=True):
-                            st.session_state.show_detail = False
-                            st.session_state.selected_member = None
-                            st.rerun()
-
-                    if submitted:
-                        try:
-                            update_data = MemberUpdate(
-                                name=edit_name,
-                                gender=edit_gender,
-                                phone=edit_phone,
-                                address=edit_address,
-                                church_role=edit_role,
-                                relationship=edit_relationship
-                            )
-                            result = api.update_member(sel_member.get('member_id'), update_data)
-                            if result.get('success'):
-                                st.success("저장되었습니다!")
-                                st.session_state.show_detail = False
-                                st.session_state.selected_member = None
-                                st.cache_data.clear()
-                                st.rerun()
-                            else:
-                                st.error(f"저장 실패: {result.get('error')}")
-                        except Exception as e:
-                            st.error(f"오류: {e}")
         else:
             st.info("조건에 맞는 성도가 없습니다.")
 

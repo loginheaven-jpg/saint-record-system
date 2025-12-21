@@ -91,7 +91,6 @@ st.markdown("""
     border-radius: 4px;
 }
 .stat-dot.present { background: #4A9B7F; }
-.stat-dot.online { background: #3498db; }
 .stat-dot.absent { background: #E8985E; }
 .stat-label {
     font-size: 13px;
@@ -188,15 +187,20 @@ def load_attendance(year: int, week_no: int):
         return api.get_attendance(year, week_no=week_no)
     return pd.DataFrame()
 
-# 헤더
-st.markdown("""
-<div class="page-header">
-    <div>
-        <h1>출석 입력</h1>
-        <p>주일 예배 출석을 기록합니다</p>
+# 헤더 (대시보드 돌아가기 버튼 포함)
+col_back, col_title = st.columns([1, 11])
+with col_back:
+    if st.button("← 대시보드", key="back_to_dashboard", use_container_width=True):
+        st.switch_page("app.py")
+with col_title:
+    st.markdown("""
+    <div class="page-header">
+        <div>
+            <h1>출석 입력</h1>
+            <p>주일 예배 출석을 기록합니다</p>
+        </div>
     </div>
-</div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 if db_connected:
     # 로딩 표시
@@ -262,29 +266,27 @@ if db_connected:
                         st.session_state.attendance_data[attendance_key][member_id] = '0'
 
         # 일괄 버튼
-        col1, col2, col3, col4 = st.columns([1, 1, 1, 3])
+        col1, col2, col3 = st.columns([1, 1, 4])
         with col1:
             if st.button("✅ 전체 출석", use_container_width=True):
                 for member_id in st.session_state.attendance_data[attendance_key]:
                     st.session_state.attendance_data[attendance_key][member_id] = '1'
                 st.rerun()
         with col2:
-            if st.button("💻 전체 온라인", use_container_width=True):
-                for member_id in st.session_state.attendance_data[attendance_key]:
-                    st.session_state.attendance_data[attendance_key][member_id] = '2'
-                st.rerun()
-        with col3:
             if st.button("❌ 전체 결석", use_container_width=True):
                 for member_id in st.session_state.attendance_data[attendance_key]:
                     st.session_state.attendance_data[attendance_key][member_id] = '0'
                 st.rerun()
 
-        # 통계
-        attend_counts = {'1': 0, '2': 0, '0': 0}
+        # 통계 (출석/결석 이원화, 기존 온라인은 출석으로 집계)
+        attend_counts = {'1': 0, '0': 0}
         for member_id, status in st.session_state.attendance_data.get(attendance_key, {}).items():
+            # 기존 '2' (온라인)은 '1' (출석)으로 처리
+            if status == '2':
+                status = '1'
             attend_counts[status] = attend_counts.get(status, 0) + 1
         total = sum(attend_counts.values())
-        present_rate = int((attend_counts['1'] + attend_counts['2']) / total * 100) if total > 0 else 0
+        present_rate = int(attend_counts['1'] / total * 100) if total > 0 else 0
 
         st.markdown(f"""
         <div class="stats-bar">
@@ -292,11 +294,6 @@ if db_connected:
                 <div class="stat-dot present"></div>
                 <span class="stat-label">출석</span>
                 <span class="stat-value">{attend_counts['1']}</span>
-            </div>
-            <div class="stat-item">
-                <div class="stat-dot online"></div>
-                <span class="stat-label">온라인</span>
-                <span class="stat-value">{attend_counts['2']}</span>
             </div>
             <div class="stat-item">
                 <div class="stat-dot absent"></div>
@@ -340,21 +337,19 @@ if db_connected:
                     ''', unsafe_allow_html=True)
 
                 with col3:
-                    status_text = {'1': '✅ 출석', '2': '💻 온라인', '0': '❌ 결석'}
-                    status_color = {'1': '#4A9B7F', '2': '#3498db', '0': '#E8985E'}
-                    st.markdown(f'<div style="font-weight:600; color:{status_color.get(current_status)}">{status_text.get(current_status)}</div>', unsafe_allow_html=True)
+                    # 기존 '2' (온라인)은 '1' (출석)으로 표시
+                    display_status = '1' if current_status == '2' else current_status
+                    status_text = {'1': '✅ 출석', '0': '❌ 결석'}
+                    status_color = {'1': '#4A9B7F', '0': '#E8985E'}
+                    st.markdown(f'<div style="font-weight:600; color:{status_color.get(display_status, "#4A9B7F")}">{status_text.get(display_status, "✅ 출석")}</div>', unsafe_allow_html=True)
 
                 with col4:
-                    btn_cols = st.columns(3)
+                    btn_cols = st.columns(2)
                     with btn_cols[0]:
                         if st.button("출석", key=f"p_{member_id}", use_container_width=True):
                             st.session_state.attendance_data[attendance_key][member_id] = '1'
                             st.rerun()
                     with btn_cols[1]:
-                        if st.button("온라인", key=f"o_{member_id}", use_container_width=True):
-                            st.session_state.attendance_data[attendance_key][member_id] = '2'
-                            st.rerun()
-                    with btn_cols[2]:
                         if st.button("결석", key=f"a_{member_id}", use_container_width=True):
                             st.session_state.attendance_data[attendance_key][member_id] = '0'
                             st.rerun()
@@ -369,10 +364,11 @@ if db_connected:
             if not members.empty:
                 records = []
                 for member_id, attend_type in st.session_state.attendance_data.get(attendance_key, {}).items():
+                    # 기존 '2' (온라인)은 '1' (출석)으로 변환
                     records.append(AttendanceCreate(
                         member_id=member_id,
                         attend_date=selected_date,
-                        attend_type=AttendType(attend_type),
+                        attend_type=AttendType.from_value(attend_type),
                         year=year,
                         week_no=week_no
                     ))

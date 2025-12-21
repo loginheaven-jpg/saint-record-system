@@ -184,7 +184,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.14"  # 기본 메뉴 비활성화 + 버전 표시 추가
+APP_VERSION = "v3.15"  # UI 완성 (출석 이원화, 네비게이션, 가정/검색/설정 페이지)
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
