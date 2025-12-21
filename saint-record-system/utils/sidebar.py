@@ -4,7 +4,7 @@
 """
 import streamlit as st
 
-APP_VERSION = "v3.20"
+APP_VERSION = "v3.21"
 
 def render_shared_sidebar(current_page: str = None):
     """
