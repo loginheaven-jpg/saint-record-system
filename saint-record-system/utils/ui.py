@@ -675,19 +675,90 @@ def load_custom_css():
         }
 
         .section-title {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             color: var(--color-primary);
-            margin-bottom: 24px;
+            margin-bottom: 16px;
+            padding: 8px 0;
             display: flex;
             align-items: center;
             gap: 10px;
+            line-height: 1.4;
         }
 
         .section-title svg {
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
             color: var(--color-accent);
+            flex-shrink: 0;
+        }
+
+        /* 데이터 영역 좌측 강조 바 */
+        .data-content {
+            border-left: 4px solid var(--color-accent);
+            padding-left: 16px;
+            margin-left: 8px;
+            background: rgba(201, 169, 98, 0.05);
+            border-radius: 0 8px 8px 0;
+            padding-top: 12px;
+            padding-bottom: 12px;
+        }
+
+        /* 알림 배지 팝오버 스타일 */
+        .alert-badge-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .alert-popover {
+            position: absolute;
+            bottom: calc(100% + 12px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            min-width: 260px;
+            max-width: 320px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .alert-badge-wrapper:hover .alert-popover {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(-4px);
+            pointer-events: auto;
+        }
+
+        .alert-popover::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 8px solid transparent;
+            border-top-color: white;
+        }
+
+        .alert-popover-title {
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #E8E4DF;
+        }
+
+        .alert-popover-content {
+            font-size: 12px;
+            color: #5D4037;
+            line-height: 1.6;
+            max-height: 180px;
+            overflow-y: auto;
         }
 
         .dept-container {
@@ -886,12 +957,14 @@ def load_custom_css():
         }
 
         .groups-title {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             color: var(--color-text-light);
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 16px;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            padding: 8px 0;
+            line-height: 1.4;
         }
 
         .group-grid {

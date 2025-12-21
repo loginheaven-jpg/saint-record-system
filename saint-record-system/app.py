@@ -184,7 +184,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.15"  # UI 완성 (출석 이원화, 네비게이션, 가정/검색/설정 페이지)
+APP_VERSION = "v3.16"  # 대시보드 UI 개선 (알림 팝오버, 제목 통일, 좌측 강조 바)
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -277,7 +277,7 @@ render_sidebar()
 st.markdown(get_attendance_table_css(), unsafe_allow_html=True)
 
 # 헤더 (제목 + 날짜 + 알림 + 새로고침)
-col_title, col_date, col_alerts, col_refresh = st.columns([1.8, 1, 1.8, 0.4])
+col_title, col_date, col_alerts, col_refresh = st.columns([1.6, 0.8, 2, 0.6])
 
 with col_title:
     st.markdown('<h1 style="font-family:Playfair Display,serif;font-size:32px;font-weight:600;color:#2C3E50;margin:0 0 4px 0;">대시보드</h1><p style="font-size:13px;color:#6B7B8C;margin:0;">예봄교회 성도 현황</p>', unsafe_allow_html=True)
@@ -331,21 +331,39 @@ with col_alerts:
         for dept, names in dept_bday.items():
             bday_detail += f"<div style='margin-bottom:4px;'><strong>{dept}</strong> ({len(names)}명): {', '.join(names)}</div>"
 
-    # 알림 배지 HTML (클릭 가능한 토글 스타일)
+    # 알림 배지 HTML (hover 시 팝오버 표시)
+    # 팝오버 내용 (결석자/생일자가 있을 때만)
+    absent_popover = ""
+    if absent_count > 0:
+        absent_popover = f'''
+            <div class="alert-popover">
+                <div class="alert-popover-title" style="color:#E65100;">⚠️ 3주 연속 결석 ({absent_count}명)</div>
+                <div class="alert-popover-content">{absent_detail}</div>
+            </div>
+        '''
+
+    bday_popover = ""
+    if bday_count > 0:
+        bday_popover = f'''
+            <div class="alert-popover">
+                <div class="alert-popover-title" style="color:#F57F17;">🎂 금주 생일 ({bday_count}명)</div>
+                <div class="alert-popover-content">{bday_detail}</div>
+            </div>
+        '''
+
     alert_html = f'''
     <style>
     .alert-badge {{
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 8px 14px;
-        border-radius: 20px;
-        font-size: 13px;
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-size: 12px;
         font-weight: 600;
-        cursor: pointer;
+        cursor: default;
         transition: all 0.2s ease;
-        border: none;
-        margin-right: 8px;
+        white-space: nowrap;
     }}
     .alert-badge.warning {{
         background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
@@ -363,59 +381,41 @@ with col_alerts:
         border: 1px solid #81C784;
     }}
     .alert-badge:hover {{
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }}
     .alert-container {{
         display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
+        flex-wrap: nowrap;
+        gap: 12px;
         align-items: center;
     }}
     </style>
     <div class="alert-container">
-        <div class="alert-badge {'warning' if absent_count > 0 else 'success'}">
-            {'⚠️' if absent_count > 0 else '✓'} 3주 연속 결석 {absent_count}명
+        <div class="alert-badge-wrapper">
+            <div class="alert-badge {'warning' if absent_count > 0 else 'success'}">
+                {'⚠️' if absent_count > 0 else '✓'} 3주 연속 결석 {absent_count}명
+            </div>
+            {absent_popover}
         </div>
-        <div class="alert-badge {'info' if bday_count > 0 else 'success'}">
-            {'🎂' if bday_count > 0 else '✓'} 금주 생일 {bday_count}명
+        <div class="alert-badge-wrapper">
+            <div class="alert-badge {'info' if bday_count > 0 else 'success'}">
+                {'🎂' if bday_count > 0 else '✓'} 금주 생일 {bday_count}명
+            </div>
+            {bday_popover}
         </div>
     </div>
     '''
     st.markdown(alert_html, unsafe_allow_html=True)
 
-    # 상세 내용 토글 (버튼으로 제어)
-    if absent_count > 0 or bday_count > 0:
-        if st.button("📋 상세 보기", key="alert_detail_btn", type="secondary"):
-            st.session_state['show_alert_detail'] = not st.session_state.get('show_alert_detail', False)
-
-        if st.session_state.get('show_alert_detail', False):
-            detail_cols = st.columns(2)
-            with detail_cols[0]:
-                if absent_count > 0:
-                    st.markdown(f'''
-                    <div style="background:#FFF8E1;border-radius:12px;padding:14px;border-left:4px solid #E65100;">
-                        <div style="font-weight:700;color:#E65100;margin-bottom:8px;font-size:14px;">⚠️ 3주 연속 결석 ({absent_count}명)</div>
-                        <div style="font-size:12px;color:#5D4037;line-height:1.6;">{absent_detail}</div>
-                    </div>
-                    ''', unsafe_allow_html=True)
-            with detail_cols[1]:
-                if bday_count > 0:
-                    st.markdown(f'''
-                    <div style="background:#FFFDE7;border-radius:12px;padding:14px;border-left:4px solid #F57F17;">
-                        <div style="font-weight:700;color:#F57F17;margin-bottom:8px;font-size:14px;">🎂 금주 생일 ({bday_count}명)</div>
-                        <div style="font-size:12px;color:#5D4037;line-height:1.6;">{bday_detail}</div>
-                    </div>
-                    ''', unsafe_allow_html=True)
-
 with col_refresh:
     cache_time = st.session_state.get('dashboard_cache_time', 0)
     if cache_time > 0:
         cache_age_min = int((time.time() - cache_time) / 60)
-        cache_info = f"{cache_age_min}분" if cache_age_min < 60 else f"{cache_age_min // 60}h"
+        cache_info = f"{cache_age_min}분 전" if cache_age_min < 60 else f"{cache_age_min // 60}시간 전"
     else:
-        cache_info = "new"
-    st.markdown(f'<p style="font-size:9px;color:#6B7B8C;text-align:center;margin:4px 0 2px 0;">{cache_info}</p>', unsafe_allow_html=True)
+        cache_info = "최신"
+    st.markdown(f'<p style="font-size:11px;color:#6B7B8C;text-align:center;margin:4px 0 2px 0;font-weight:500;">{cache_info}</p>', unsafe_allow_html=True)
     if st.button("🔄", key="refresh_btn", help="데이터 새로고침"):
         fetch_dashboard_data_from_api.clear()
         clear_sheets_cache()
@@ -485,9 +485,10 @@ st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
 # ============================================================
 # 섹션 1: 8주 출석 현황 (스택 바 차트)
 # ============================================================
-bar_chart_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;color:#C9A962;"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>'
-st.markdown(f'''<div class="stacked-chart-section" style="padding:12px 20px;">
-    <div class="section-title" style="font-size:15px;margin-bottom:8px;">{bar_chart_svg}최근 8주 출석 현황</div>
+bar_chart_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>'
+st.markdown(f'''<div class="stacked-chart-section">
+    <div class="section-title">{bar_chart_svg}최근 8주 출석 현황</div>
+    <div class="data-content">
 ''', unsafe_allow_html=True)
 
 # 스택 바 차트 데이터
@@ -579,16 +580,17 @@ else:
 
 # 차트 레전드 (부서별 4색)
 st.markdown(render_dept_chart_legend(), unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div></div>', unsafe_allow_html=True)  # data-content + stacked-chart-section 닫기
 
 st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
 
 # ============================================================
 # 섹션 2: 부서별 현황 (2x2 카드 + 목장 그리드)
 # ============================================================
-hierarchy_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:22px;height:22px;color:#C9A962;"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>'
+hierarchy_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>'
 st.markdown(f'''<div class="hierarchy-section">
     <div class="section-title">{hierarchy_svg}부서별 현황</div>
+    <div class="data-content">
 ''', unsafe_allow_html=True)
 
 # 부서 선택 상태 초기화
@@ -907,7 +909,7 @@ if dept_stats:
 else:
     st.markdown('<p style="color:#6B7B8C;font-size:14px;text-align:center;padding:40px;">부서 데이터가 없습니다</p>', unsafe_allow_html=True)
 
-st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div></div>', unsafe_allow_html=True)  # data-content + hierarchy-section 닫기
 
 # 알림은 헤더 우측 상단으로 이동됨
 
