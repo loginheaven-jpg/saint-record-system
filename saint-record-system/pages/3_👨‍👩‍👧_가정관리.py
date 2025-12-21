@@ -3,9 +3,11 @@ import pandas as pd
 from utils.ui import load_custom_css
 from utils.sheets_api import SheetsAPI
 from utils.enums import Relationship, MemberStatus
+from utils.sidebar import render_shared_sidebar
 
 st.set_page_config(page_title="가정 관리", page_icon="👨‍👩‍👧", layout="wide")
 load_custom_css()
+render_shared_sidebar("family")
 
 # 추가 CSS
 st.markdown("""
@@ -126,20 +128,15 @@ def get_member_tag_class(relationship):
         return 'parent'
     return ''
 
-# 헤더 (대시보드 돌아가기 버튼 포함)
-col_back, col_title = st.columns([1, 11])
-with col_back:
-    if st.button("← 대시보드", key="back_to_dashboard", use_container_width=True):
-        st.switch_page("app.py")
-with col_title:
-    st.markdown("""
-    <div class="page-header">
-        <div>
-            <h1>👨‍👩‍👧 가정 관리</h1>
-            <p>가정별 구성원을 조회하고 관리합니다</p>
-        </div>
+# 페이지 헤더
+st.markdown("""
+<div class="page-header">
+    <div>
+        <h1>👨‍👩‍👧 가정 관리</h1>
+        <p>가정별 구성원을 조회하고 관리합니다</p>
     </div>
-    """, unsafe_allow_html=True)
+</div>
+""", unsafe_allow_html=True)
 
 if db_connected:
     with st.spinner("📊 데이터를 불러오는 중..."):

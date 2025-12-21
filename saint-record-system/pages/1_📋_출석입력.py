@@ -5,9 +5,11 @@ from utils.ui import load_custom_css
 from utils.sheets_api import SheetsAPI
 from utils.enums import AttendType, MemberStatus
 from utils.validators import AttendanceCreate
+from utils.sidebar import render_shared_sidebar
 
 st.set_page_config(page_title="출석 입력", page_icon="📋", layout="wide")
 load_custom_css()
+render_shared_sidebar("attendance")
 
 # 추가 CSS
 st.markdown("""
@@ -187,20 +189,15 @@ def load_attendance(year: int, week_no: int):
         return api.get_attendance(year, week_no=week_no)
     return pd.DataFrame()
 
-# 헤더 (대시보드 돌아가기 버튼 포함)
-col_back, col_title = st.columns([1, 11])
-with col_back:
-    if st.button("← 대시보드", key="back_to_dashboard", use_container_width=True):
-        st.switch_page("app.py")
-with col_title:
-    st.markdown("""
-    <div class="page-header">
-        <div>
-            <h1>출석 입력</h1>
-            <p>주일 예배 출석을 기록합니다</p>
-        </div>
+# 페이지 헤더
+st.markdown("""
+<div class="page-header">
+    <div>
+        <h1>출석 입력</h1>
+        <p>주일 예배 출석을 기록합니다</p>
     </div>
-    """, unsafe_allow_html=True)
+</div>
+""", unsafe_allow_html=True)
 
 if db_connected:
     # 로딩 표시

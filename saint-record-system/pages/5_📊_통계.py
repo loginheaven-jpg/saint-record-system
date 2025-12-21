@@ -4,9 +4,11 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 from utils.sheets_api import SheetsAPI
 from utils.ui import load_custom_css
+from utils.sidebar import render_shared_sidebar
 
 st.set_page_config(page_title="통계", page_icon="📊", layout="wide")
 load_custom_css()
+render_shared_sidebar("stats")
 
 # 부서 색상 매핑 (대시보드와 동일)
 DEPT_COLORS = {
@@ -119,22 +121,16 @@ def get_yearly_statistics():
 
 
 # ============================================================
-# 헤더 + 대시보드 복귀 버튼
+# 페이지 헤더
 # ============================================================
-col_back, col_title = st.columns([1, 11])
-with col_back:
-    if st.button("← 대시보드", key="back_to_dashboard", use_container_width=True):
-        st.switch_page("app.py")
-
-with col_title:
-    st.markdown("""
-    <h1 style="font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 600; color: #2C3E50; margin: 0;">
-        📊 출석 통계
-    </h1>
-    <p style="font-size: 14px; color: #6B7B8C; margin: 4px 0 16px 0;">
-        연간 출석 현황을 다양한 관점에서 분석합니다
-    </p>
-    """, unsafe_allow_html=True)
+st.markdown("""
+<h1 style="font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 600; color: #2C3E50; margin: 0;">
+    📊 출석 통계
+</h1>
+<p style="font-size: 14px; color: #6B7B8C; margin: 4px 0 16px 0;">
+    연간 출석 현황을 다양한 관점에서 분석합니다
+</p>
+""", unsafe_allow_html=True)
 
 # 데이터 로드
 with st.spinner("데이터 로딩 중..."):

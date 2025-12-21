@@ -13,6 +13,7 @@ from utils.ui import (
     render_dept_chart_legend, render_dept_card,
     get_attendance_table_css
 )
+from utils.sidebar import render_shared_sidebar
 
 
 def get_nearest_sunday(d: date) -> date:
@@ -185,7 +186,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.18"  # 헤더 정렬 개선 (flexbox 세로 중앙 정렬)
+APP_VERSION = "v3.19"  # 공유 사이드바 구현 (모든 페이지에서 네비게이션 유지)
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -220,55 +221,9 @@ else:
     dashboard_data = get_dashboard_data(selected_sunday_str, force_refresh=force_refresh)
 
 # ============================================================
-# 4. 사이드바 렌더링 (Streamlit 네이티브 네비게이션 사용)
+# 4. 사이드바 렌더링 (공유 모듈 사용)
 # ============================================================
-def render_sidebar():
-    with st.sidebar:
-        # 로고 섹션
-        st.markdown('<div style="padding:1.5rem 0.75rem;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:1.5rem;"><div style="width:48px;height:48px;background:linear-gradient(135deg,#C9A962 0%,#D4B87A 100%);border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:0 4px 16px rgba(201,169,98,0.3);font-size:24px;">⛪</div><div style="font-family:Playfair Display,serif;font-size:22px;font-weight:600;color:white;">성도기록부</div><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:4px;letter-spacing:1px;">SAINT RECORD SYSTEM</div></div>', unsafe_allow_html=True)
-
-        # 메인 섹션 라벨
-        st.markdown('<div style="padding:0 0.5rem;"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;">메인</div></div>', unsafe_allow_html=True)
-
-        # 대시보드 (활성) - 현재 페이지이므로 스타일링만
-        st.markdown('<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;background:rgba(201,169,98,0.15);color:white;margin:0 0.5rem 4px;position:relative;"><div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#C9A962;border-radius:0 2px 2px 0;"></div><span style="font-size:18px;">🏠</span><span style="font-size:14px;font-weight:500;">대시보드</span></div>', unsafe_allow_html=True)
-
-        # 출석 입력 - 실제 네비게이션 링크
-        st.page_link("pages/1_📋_출석입력.py", label="📋 출석 입력")
-
-        # 관리 섹션 라벨
-        st.markdown('<div style="padding:0 0.5rem;margin-top:20px;"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;">관리</div></div>', unsafe_allow_html=True)
-
-        # 성도 관리 - 실제 네비게이션 링크
-        st.page_link("pages/2_👤_성도관리.py", label="👤 성도 관리")
-
-        # 서브메뉴 (가정관리)
-        st.markdown('<div class="nav-sub-container">', unsafe_allow_html=True)
-        st.page_link("pages/3_👨‍👩‍👧_가정관리.py", label="🏠 가정")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        # 조회 섹션 라벨
-        st.markdown('<div style="padding:0 0.5rem;margin-top:20px;"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;">조회</div></div>', unsafe_allow_html=True)
-
-        # 검색 페이지
-        st.page_link("pages/4_🔍_검색.py", label="🔍 검색")
-
-        # 분석 섹션 라벨
-        st.markdown('<div style="padding:0 0.5rem;margin-top:20px;"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;">분석</div></div>', unsafe_allow_html=True)
-
-        # 통계 페이지
-        st.page_link("pages/5_📊_통계.py", label="📊 통계 / 보고서")
-
-        # 설정 페이지
-        st.page_link("pages/6_⚙️_설정.py", label="⚙️ 설정")
-
-        # 푸터
-        st.markdown('<div style="margin-top:auto;padding:1.5rem 1rem;border-top:1px solid rgba(255,255,255,0.1);"><div style="display:flex;align-items:center;gap:12px;"><div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#8B7355 0%,#C9A962 100%);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:white;">교</div><div><div style="font-size:14px;font-weight:500;color:white;">교적담당자</div><div style="font-size:12px;color:rgba(255,255,255,0.5);">관리자</div></div></div></div>', unsafe_allow_html=True)
-
-        # 버전 표시 (사이드바 하단)
-        st.markdown(f'<div style="text-align:center;padding:8px;font-size:11px;color:rgba(255,255,255,0.4);">{APP_VERSION}</div>', unsafe_allow_html=True)
-
-render_sidebar()
+render_shared_sidebar("dashboard")
 
 # ============================================================
 # 5. 메인 컨텐츠 렌더링
@@ -523,7 +478,6 @@ st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
 bar_chart_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>'
 st.markdown(f'''<div class="stacked-chart-section">
     <div class="section-title">{bar_chart_svg}최근 8주 출석 현황</div>
-    <div class="data-content">
 ''', unsafe_allow_html=True)
 
 # 스택 바 차트 데이터
@@ -615,7 +569,7 @@ else:
 
 # 차트 레전드 (부서별 4색)
 st.markdown(render_dept_chart_legend(), unsafe_allow_html=True)
-st.markdown('</div></div>', unsafe_allow_html=True)  # data-content + stacked-chart-section 닫기
+st.markdown('</div>', unsafe_allow_html=True)  # stacked-chart-section 닫기
 
 st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
 
@@ -625,7 +579,6 @@ st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
 hierarchy_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>'
 st.markdown(f'''<div class="hierarchy-section">
     <div class="section-title">{hierarchy_svg}부서별 현황</div>
-    <div class="data-content">
 ''', unsafe_allow_html=True)
 
 # 부서 선택 상태 초기화
@@ -944,7 +897,7 @@ if dept_stats:
 else:
     st.markdown('<p style="color:#6B7B8C;font-size:14px;text-align:center;padding:40px;">부서 데이터가 없습니다</p>', unsafe_allow_html=True)
 
-st.markdown('</div></div>', unsafe_allow_html=True)  # data-content + hierarchy-section 닫기
+st.markdown('</div>', unsafe_allow_html=True)  # hierarchy-section 닫기
 
 # 알림은 헤더 우측 상단으로 이동됨
 

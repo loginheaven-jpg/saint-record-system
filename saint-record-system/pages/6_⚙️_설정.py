@@ -2,9 +2,11 @@ import streamlit as st
 import pandas as pd
 from utils.ui import load_custom_css
 from utils.sheets_api import SheetsAPI, clear_sheets_cache
+from utils.sidebar import render_shared_sidebar
 
 st.set_page_config(page_title="설정", page_icon="⚙️", layout="wide")
 load_custom_css()
+render_shared_sidebar("settings")
 
 # 추가 CSS
 st.markdown("""
@@ -128,23 +130,18 @@ def load_data_stats():
         }
     return {'members': 0, 'departments': 0, 'groups': 0, 'active': 0}
 
-# 헤더 (대시보드 돌아가기 버튼 포함)
-col_back, col_title = st.columns([1, 11])
-with col_back:
-    if st.button("← 대시보드", key="back_to_dashboard", use_container_width=True):
-        st.switch_page("app.py")
-with col_title:
-    st.markdown("""
-    <div class="page-header">
-        <div>
-            <h1>⚙️ 설정</h1>
-            <p>시스템 설정 및 정보를 관리합니다</p>
-        </div>
+# 페이지 헤더
+st.markdown("""
+<div class="page-header">
+    <div>
+        <h1>⚙️ 설정</h1>
+        <p>시스템 설정 및 정보를 관리합니다</p>
     </div>
-    """, unsafe_allow_html=True)
+</div>
+""", unsafe_allow_html=True)
 
 # 앱 버전 (app.py와 동일)
-APP_VERSION = "v3.18"
+APP_VERSION = "v3.19"
 
 # 시스템 정보 섹션
 st.markdown("""
@@ -232,12 +229,15 @@ st.markdown("""
 # 버전 히스토리
 with st.expander("📋 버전 히스토리"):
     st.markdown("""
+    **v3.19** - 공유 사이드바 구현
+    - 모든 페이지에서 네비게이션 유지
+    - 페이지 이동 시 사이드바 깜빡임 제거
+    - 빈 박스 문제 수정 (data-content 제거)
+
     **v3.18** - 헤더 정렬 개선
     - 상단 헤더 요소 세로 중앙 정렬 (flexbox)
-    - 컬럼 비율 최적화
 
     **v3.17** - 알림 배지 hover 툴팁 수정
-    - 팝오버 방식 → 네이티브 브라우저 툴팁 (title 속성)
 
     **v3.16** - 대시보드 UI 개선
     - 제목 스타일 통일 (font-size 16px)
