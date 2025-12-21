@@ -339,25 +339,37 @@ st.markdown("""
     background: white !important;
     border: 1px solid #E8E4DF !important;
     border-radius: 10px !important;
-    padding: 8px 12px !important;
+    padding: 6px 14px !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
     color: #2C3E50 !important;
-    font-size: 13px !important;
+    font-size: 12px !important;
     font-weight: 500 !important;
+    height: 36px !important;
 }
 [data-testid="stPopover"] > button:hover {
     border-color: #C9A962 !important;
     box-shadow: 0 4px 12px rgba(201, 169, 98, 0.15) !important;
 }
-
-/* 컬럼 우측 정렬 */
-[data-testid="stHorizontalBlock"] {
-    align-items: flex-start !important;
+/* expand more 아이콘 숨기기 */
+[data-testid="stPopover"] > button > div:last-child {
+    display: none !important;
 }
-[data-testid="stHorizontalBlock"] > [data-testid="column"]:last-child {
+/* popover 버튼 내부 텍스트 정렬 */
+[data-testid="stPopover"] > button > div:first-child {
+    margin: 0 !important;
+}
+
+/* 헤더 행 정렬 */
+.header-option-c + div[data-testid="stHorizontalBlock"],
+.alerts-float + div[data-testid="stHorizontalBlock"] {
+    align-items: center !important;
+}
+/* 새로고침 버튼 컬럼 우측 정렬 */
+.alerts-float + div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:last-child {
     display: flex !important;
     flex-direction: column !important;
     align-items: flex-end !important;
+    padding-right: 0 !important;
 }
 
 /* 새로고침 버튼 스타일 */
