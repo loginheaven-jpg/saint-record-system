@@ -48,11 +48,27 @@ st.markdown("""
     border-left: 4px solid #C9A962;
     cursor: pointer;
     transition: all 0.2s ease;
+    position: relative;
 }
 .family-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 16px rgba(44, 62, 80, 0.12);
     border-left-color: #B8945A;
+}
+.family-card .detail-link {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    font-size: 12px;
+    color: #6B7B8C;
+    background: #F8F6F3;
+    padding: 4px 10px;
+    border-radius: 12px;
+    transition: all 0.2s;
+}
+.family-card:hover .detail-link {
+    background: #C9A962;
+    color: white;
 }
 .family-head {
     font-size: 18px;
@@ -228,6 +244,15 @@ st.markdown("""
 .back-btn:hover {
     background: #E8E4DF;
 }
+
+/* 숨겨진 버튼 스타일 */
+.hidden-btn {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    height: 0;
+    overflow: hidden;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -358,25 +383,26 @@ def render_family_list(members, families):
             tag_class = get_member_tag_class(rel)
             members_html += f'<span class="member-tag {tag_class}">{rel}: {name}</span>'
 
-        # 버튼으로 클릭 가능하게
-        col1, col2 = st.columns([10, 1])
-        with col1:
-            st.markdown(f"""
-            <div class="family-card" onclick="document.getElementById('family_btn_{family_id}').click();">
-                <div class="family-head">
-                    🏠 {head_name} 가정 <span style="font-size:13px;color:#6B7B8C;font-weight:400;">({len(sorted_members)}명)</span>
-                </div>
-                <div class="family-members">
-                    {members_html}
-                </div>
+        # 카드 클릭 가능하게 (상세 버튼 내부 배치)
+        st.markdown(f"""
+        <div class="family-card" onclick="document.getElementById('family_btn_{family_id}').click();">
+            <span class="detail-link">상세 →</span>
+            <div class="family-head">
+                🏠 {head_name} 가정 <span style="font-size:13px;color:#6B7B8C;font-weight:400;">({len(sorted_members)}명)</span>
             </div>
-            """, unsafe_allow_html=True)
+            <div class="family-members">
+                {members_html}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
         # 숨겨진 버튼 (클릭 이벤트용)
-        if st.button("상세", key=f"family_btn_{family_id}", type="secondary"):
+        st.markdown('<div class="hidden-btn">', unsafe_allow_html=True)
+        if st.button("상세", key=f"family_btn_{family_id}"):
             st.session_state.selected_family_id = family_id
             st.session_state.selected_family_name = head_name
             st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
     if displayed_count == 0:
         st.info("검색 결과가 없습니다.")
@@ -405,22 +431,13 @@ def render_family_detail(family_id, family_members, head_name):
     sorted_members = sorted(family_members, key=lambda x: relation_order.get(x.get('relationship', '기타'), 99))
 
     # 테이블 헤더
-    header_cols = [
-        "성명", "관계", "생년월일", "전화번호", "부서", "목장",
-        "직분", "신급", "상태", "등록일"
-    ]
+    header_cols = ["성명", "관계", "생년월일", "전화번호", "부서", "목장", "직분", "신급", "상태", "등록일"]
 
-    # 테이블 HTML 생성
-    table_html = '<div class="table-container"><table class="family-table"><thead><tr>'
-    for col in header_cols:
-        table_html += f'<th>{col}</th>'
-    table_html += '</tr></thead><tbody>'
-
-    # 데이터 행 생성
+    # 테이블 HTML 생성 (한 줄로)
+    rows_html = ""
     for member in sorted_members:
         rel = member.get('relationship', '기타')
         rel_class = get_rel_badge_class(rel)
-
         status = member.get('status', '재적')
         status_class = get_status_badge_class(status)
 
@@ -434,22 +451,10 @@ def render_family_detail(family_id, family_members, head_name):
         if reg_date and isinstance(reg_date, str) and len(reg_date) >= 10:
             reg_date = reg_date[:10]
 
-        table_html += f'''
-        <tr>
-            <td><strong>{member.get('name', '-')}</strong></td>
-            <td><span class="rel-badge {rel_class}">{rel}</span></td>
-            <td>{birth or '-'}</td>
-            <td>{member.get('phone', '-') or '-'}</td>
-            <td>{member.get('dept_name', '-') or '-'}</td>
-            <td>{member.get('group_name', '-') or '-'}</td>
-            <td>{member.get('position', '-') or '-'}</td>
-            <td>{member.get('faith_level', '-') or '-'}</td>
-            <td><span class="status-badge {status_class}">{status}</span></td>
-            <td>{reg_date or '-'}</td>
-        </tr>
-        '''
+        rows_html += f'<tr><td><strong>{member.get("name", "-")}</strong></td><td><span class="rel-badge {rel_class}">{rel}</span></td><td>{birth or "-"}</td><td>{member.get("phone", "-") or "-"}</td><td>{member.get("dept_name", "-") or "-"}</td><td>{member.get("group_name", "-") or "-"}</td><td>{member.get("position", "-") or "-"}</td><td>{member.get("faith_level", "-") or "-"}</td><td><span class="status-badge {status_class}">{status}</span></td><td>{reg_date or "-"}</td></tr>'
 
-    table_html += '</tbody></table></div>'
+    header_html = "".join([f"<th>{col}</th>" for col in header_cols])
+    table_html = f'<div class="table-container"><table class="family-table"><thead><tr>{header_html}</tr></thead><tbody>{rows_html}</tbody></table></div>'
     st.markdown(table_html, unsafe_allow_html=True)
 
     # 가족 통계
