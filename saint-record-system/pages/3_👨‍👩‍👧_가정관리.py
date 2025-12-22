@@ -1,8 +1,10 @@
 import streamlit as st
 import pandas as pd
+from datetime import date
 from utils.ui import load_custom_css
 from utils.sheets_api import SheetsAPI
-from utils.enums import Relationship, MemberStatus
+from utils.enums import Relationship, MemberStatus, BaptismStatus, ChurchRole, GroupRole, MemberType
+from utils.validators import MemberUpdate
 from utils.sidebar import render_shared_sidebar
 
 st.set_page_config(page_title="가정 관리", page_icon="👨‍👩‍👧", layout="wide")
@@ -14,6 +16,15 @@ if 'selected_family_id' not in st.session_state:
     st.session_state.selected_family_id = None
 if 'selected_family_name' not in st.session_state:
     st.session_state.selected_family_name = None
+if 'editing_member_id' not in st.session_state:
+    st.session_state.editing_member_id = None
+
+# URL 쿼리 파라미터로 가정 ID 받기 (성도관리에서 이동 시)
+query_params = st.query_params
+if 'family_id' in query_params and not st.session_state.selected_family_id:
+    st.session_state.selected_family_id = query_params['family_id']
+    if 'family_name' in query_params:
+        st.session_state.selected_family_name = query_params['family_name']
 
 # 추가 CSS
 st.markdown("""
@@ -227,24 +238,6 @@ st.markdown("""
 .status-inactive { background: #FFEBEE; color: #C62828; }
 .status-leave { background: #FFF3E0; color: #E65100; }
 
-/* 뒤로가기 버튼 */
-.back-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    background: #F8F6F3;
-    border: 1px solid #E8E4DF;
-    border-radius: 8px;
-    color: #2C3E50;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-.back-btn:hover {
-    background: #E8E4DF;
-}
-
 /* 숨겨진 버튼 스타일 */
 .hidden-btn {
     position: absolute;
@@ -252,6 +245,24 @@ st.markdown("""
     pointer-events: none;
     height: 0;
     overflow: hidden;
+}
+
+/* 편집 폼 */
+.edit-form-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 2px 20px rgba(44, 62, 80, 0.08);
+    margin-bottom: 20px;
+    border-left: 4px solid #C9A962;
+}
+.section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #8B7355;
+    margin: 20px 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #E8E4DF;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -279,6 +290,12 @@ def load_members():
 def load_groups():
     if db_connected:
         return api.get_groups()
+    return pd.DataFrame()
+
+@st.cache_data(ttl=300)
+def load_departments():
+    if db_connected:
+        return api.get_departments()
     return pd.DataFrame()
 
 def get_member_tag_class(relationship):
@@ -408,20 +425,136 @@ def render_family_list(members, families):
         st.info("검색 결과가 없습니다.")
 
 
-def render_family_detail(family_id, family_members, head_name):
+def render_member_edit_form(member, departments, groups):
+    """성도 수정 폼 렌더링"""
+    st.markdown(f"""
+    <div class="edit-form-card">
+        <h3 style="margin:0 0 16px 0;color:#2C3E50;">✏️ {member.get('name', '')} 정보 수정</h3>
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.form(f"edit_member_{member.get('member_id')}"):
+        # 기본 정보
+        st.markdown('<div class="section-title">📋 기본 정보</div>', unsafe_allow_html=True)
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            edit_name = st.text_input("이름 *", value=member.get('name', ''))
+        with c2:
+            rel_options = [r.value for r in Relationship]
+            current_rel = member.get('relationship', '기타')
+            edit_relationship = st.selectbox("관계", rel_options,
+                index=rel_options.index(current_rel) if current_rel in rel_options else len(rel_options)-1)
+        with c3:
+            birth_val = None
+            if member.get('birth_date'):
+                try:
+                    birth_val = pd.to_datetime(member.get('birth_date')).date()
+                except:
+                    pass
+            edit_birth = st.date_input("생년월일", value=birth_val)
+        with c4:
+            edit_phone = st.text_input("전화번호", value=member.get('phone', ''))
+
+        # 교회 정보
+        st.markdown('<div class="section-title">⛪ 교회 정보</div>', unsafe_allow_html=True)
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            dept_names = departments['dept_name'].tolist() if not departments.empty else []
+            current_dept = member.get('dept_name', '')
+            edit_dept = st.selectbox("소속부", dept_names,
+                index=dept_names.index(current_dept) if current_dept in dept_names else 0) if dept_names else ""
+        with c2:
+            group_names = groups['group_name'].tolist() if not groups.empty else []
+            current_group = member.get('group_name', '')
+            edit_group = st.selectbox("소속목장", group_names,
+                index=group_names.index(current_group) if current_group in group_names else 0) if group_names else ""
+        with c3:
+            role_options = [r.value for r in ChurchRole]
+            current_role = member.get('position', '성도')
+            edit_role = st.selectbox("직분", role_options,
+                index=role_options.index(current_role) if current_role in role_options else len(role_options)-1)
+        with c4:
+            baptism_options = [b.value for b in BaptismStatus]
+            current_baptism = member.get('faith_level', '기타')
+            edit_baptism = st.selectbox("신급", baptism_options,
+                index=baptism_options.index(current_baptism) if current_baptism in baptism_options else len(baptism_options)-1)
+
+        # 상태
+        st.markdown('<div class="section-title">📊 상태</div>', unsafe_allow_html=True)
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            status_opts = [s.value for s in MemberStatus]
+            current_status = member.get('status', '재적')
+            edit_status = st.selectbox("상태", status_opts,
+                index=status_opts.index(current_status) if current_status in status_opts else 0)
+        with c2:
+            group_role_options = [r.value for r in GroupRole]
+            current_group_role = member.get('group_role', '목원')
+            edit_group_role = st.selectbox("목장직분", group_role_options,
+                index=group_role_options.index(current_group_role) if current_group_role in group_role_options else len(group_role_options)-1)
+
+        # 버튼
+        st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
+        btn_c1, btn_c2, btn_c3 = st.columns([1, 1, 4])
+        with btn_c1:
+            submitted = st.form_submit_button("💾 저장", use_container_width=True, type="primary")
+        with btn_c2:
+            if st.form_submit_button("취소", use_container_width=True):
+                st.session_state.editing_member_id = None
+                st.rerun()
+
+        if submitted:
+            new_dept_id = ""
+            new_group_id = ""
+            if not departments.empty and edit_dept:
+                dept_match = departments[departments['dept_name'] == edit_dept]
+                if not dept_match.empty:
+                    new_dept_id = dept_match.iloc[0]['dept_id']
+            if not groups.empty and edit_group:
+                group_match = groups[groups['group_name'] == edit_group]
+                if not group_match.empty:
+                    new_group_id = group_match.iloc[0]['group_id']
+
+            update_data = MemberUpdate(
+                name=edit_name,
+                phone=edit_phone,
+                birth_date=edit_birth if edit_birth else None,
+                dept_id=new_dept_id,
+                group_id=new_group_id,
+                church_role=edit_role,
+                group_role=edit_group_role,
+                status=edit_status,
+                relationship=edit_relationship,
+                baptism_status=edit_baptism
+            )
+
+            result = api.update_member(member.get('member_id'), update_data)
+            if result.get('success'):
+                st.success("저장되었습니다!")
+                st.session_state.editing_member_id = None
+                st.cache_data.clear()
+                st.rerun()
+            else:
+                st.error(f"저장 실패: {result.get('error')}")
+
+
+def render_family_detail(family_id, family_members, head_name, departments, groups):
     """가정 상세 화면 렌더링 (엑셀 스타일 테이블)"""
 
     # 뒤로가기 버튼
     if st.button("← 가정 목록으로", key="back_btn"):
         st.session_state.selected_family_id = None
         st.session_state.selected_family_name = None
+        st.session_state.editing_member_id = None
+        # URL 파라미터도 클리어
+        st.query_params.clear()
         st.rerun()
 
     st.markdown(f"""
     <div class="detail-header">
         <div>
             <h1>🏠 {head_name} 가정</h1>
-            <span class="subtitle">가족 구성원 {len(family_members)}명의 상세 정보</span>
+            <span class="subtitle">가족 구성원 {len(family_members)}명의 상세 정보 - 수정할 성도를 선택하세요</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -429,6 +562,36 @@ def render_family_detail(family_id, family_members, head_name):
     # 가족 구성원 정렬
     relation_order = {'가장': 0, '아내': 1, '아들': 2, '딸': 3, '손자': 4, '손녀': 5, '부친': 6, '모친': 7}
     sorted_members = sorted(family_members, key=lambda x: relation_order.get(x.get('relationship', '기타'), 99))
+
+    # 수정 중인 멤버가 있으면 편집 폼 표시
+    if st.session_state.editing_member_id:
+        editing_member = None
+        for m in sorted_members:
+            if m.get('member_id') == st.session_state.editing_member_id:
+                editing_member = m
+                break
+        if editing_member:
+            render_member_edit_form(editing_member, departments, groups)
+            st.markdown("<hr>", unsafe_allow_html=True)
+
+    # 성도 선택 드롭다운
+    member_names = [f"{m.get('name', '?')} ({m.get('relationship', '?')})" for m in sorted_members]
+    member_ids = [m.get('member_id') for m in sorted_members]
+
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        selected_idx = st.selectbox(
+            "✏️ 수정할 성도 선택",
+            range(len(member_names)),
+            format_func=lambda x: member_names[x],
+            key="select_member_to_edit"
+        )
+    with col2:
+        if st.button("수정하기", key="edit_member_btn", type="primary"):
+            st.session_state.editing_member_id = member_ids[selected_idx]
+            st.rerun()
+
+    st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
 
     # 테이블 헤더
     header_cols = ["성명", "관계", "생년월일", "전화번호", "부서", "목장", "직분", "신급", "상태", "등록일"]
@@ -465,7 +628,7 @@ def render_family_detail(family_id, family_members, head_name):
         active_count = len([m for m in sorted_members if m.get('status') == '재적'])
         st.markdown(f'<div class="mini-stat"><div class="mini-stat-value">{active_count}</div><div class="mini-stat-label">재적 인원</div></div>', unsafe_allow_html=True)
     with stat_cols[1]:
-        position_count = len([m for m in sorted_members if m.get('position') and m.get('position') not in ['-', '', '없음']])
+        position_count = len([m for m in sorted_members if m.get('position') and m.get('position') not in ['-', '', '없음', '성도']])
         st.markdown(f'<div class="mini-stat"><div class="mini-stat-value">{position_count}</div><div class="mini-stat-label">직분자</div></div>', unsafe_allow_html=True)
     with stat_cols[2]:
         baptized_count = len([m for m in sorted_members if m.get('faith_level') in ['세례', '입교']])
@@ -481,6 +644,7 @@ if db_connected:
     with st.spinner("📊 데이터를 불러오는 중..."):
         members = load_members()
         groups = load_groups()
+        departments = load_departments()
 
     if not members.empty:
         # 가정 그룹핑 (family_id 기준)
@@ -505,7 +669,9 @@ if db_connected:
                 render_family_detail(
                     family_id,
                     families[family_id],
-                    st.session_state.selected_family_name or "가정"
+                    st.session_state.selected_family_name or "가정",
+                    departments,
+                    groups
                 )
             else:
                 st.error("해당 가정을 찾을 수 없습니다.")

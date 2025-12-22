@@ -324,22 +324,36 @@ if db_connected:
         if not members.empty:
             member_names = members['name'].tolist()
             member_ids = members['member_id'].tolist()
+            member_family_ids = members['family_id'].tolist() if 'family_id' in members.columns else [None] * len(members)
 
-            def on_member_select():
-                sel = st.session_state.select_member_top
-                if sel != '선택하세요':
-                    idx = member_names.index(sel)
-                    member_id = member_ids[idx]
-                    member_row = members[members['member_id'] == member_id].iloc[0]
+            col_sel1, col_sel2, col_sel3 = st.columns([3, 1, 1])
+
+            with col_sel1:
+                selected_idx = st.selectbox(
+                    "📝 성도 선택",
+                    range(len(member_names)),
+                    format_func=lambda x: member_names[x],
+                    key="select_member_top"
+                )
+
+            with col_sel2:
+                if st.button("✏️ 개별 수정", key="edit_single_btn"):
+                    member_row = members[members['member_id'] == member_ids[selected_idx]].iloc[0]
                     st.session_state.selected_member = member_row.to_dict()
                     st.session_state.show_detail = True
+                    st.rerun()
 
-            selected_name = st.selectbox(
-                "📝 수정할 성도 선택",
-                ['선택하세요'] + member_names,
-                key="select_member_top",
-                on_change=on_member_select
-            )
+            with col_sel3:
+                if st.button("👨‍👩‍👧 가정 보기", key="view_family_btn", type="primary"):
+                    family_id = member_family_ids[selected_idx]
+                    member_name = member_names[selected_idx]
+                    if family_id and not pd.isna(family_id):
+                        # 가정관리 페이지로 이동 (세션 상태로 family_id 전달)
+                        st.session_state.selected_family_id = family_id
+                        st.session_state.selected_family_name = member_name.split()[0] if ' ' in member_name else member_name
+                        st.switch_page("pages/3_👨‍👩‍👧_가정관리.py")
+                    else:
+                        st.warning("해당 성도의 가정 정보가 없습니다.")
 
         st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
 
