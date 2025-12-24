@@ -16,7 +16,7 @@ st.markdown("""
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 24px;
+    margin-bottom: 19px;
     padding: 0 4px;
 }
 .page-header h1 {
@@ -89,7 +89,7 @@ st.markdown("""
     background: linear-gradient(135deg, #2C3E50 0%, #3d5a73 100%);
     border-radius: 20px;
     padding: 24px 32px;
-    margin-bottom: 24px;
+    margin-bottom: 19px;
 }
 </style>
 """, unsafe_allow_html=True)

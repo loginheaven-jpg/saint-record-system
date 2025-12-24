@@ -19,7 +19,7 @@ st.markdown("""
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 32px;
+    margin-bottom: 26px;
     padding: 0 4px;
 }
 .page-header h1 {
@@ -80,7 +80,7 @@ st.markdown("""
     padding: 20px 24px;
     background: #F8F6F3;
     border-radius: 16px;
-    margin-bottom: 24px;
+    margin-bottom: 19px;
 }
 .stat-item {
     display: flex;
@@ -358,24 +358,25 @@ if db_connected:
         st.markdown("<div style='height:24px;'></div>", unsafe_allow_html=True)
 
         if st.button("💾 출석 저장", use_container_width=True, type="primary"):
-            if not members.empty:
-                records = []
-                for member_id, attend_type in st.session_state.attendance_data.get(attendance_key, {}).items():
-                    # 기존 '2' (온라인)은 '1' (출석)으로 변환
-                    records.append(AttendanceCreate(
-                        member_id=member_id,
-                        attend_date=selected_date,
-                        attend_type=AttendType.from_value(attend_type),
-                        year=year,
-                        week_no=week_no
-                    ))
-                if records:
-                    result = api.save_attendance(records)
-                    if result.get('success'):
-                        st.success(f"저장 완료! (저장: {result.get('inserted')}건)")
-                        st.cache_data.clear()
-                    else:
-                        st.error(f"저장 실패: {result.get('error')}")
+            with st.spinner("저장 중..."):
+                if not members.empty:
+                    records = []
+                    for member_id, attend_type in st.session_state.attendance_data.get(attendance_key, {}).items():
+                        # 기존 '2' (온라인)은 '1' (출석)으로 변환
+                        records.append(AttendanceCreate(
+                            member_id=member_id,
+                            attend_date=selected_date,
+                            attend_type=AttendType.from_value(attend_type),
+                            year=year,
+                            week_no=week_no
+                        ))
+                    if records:
+                        result = api.save_attendance(records)
+                        if result.get('success'):
+                            st.success(f"저장 완료! (저장: {result.get('inserted')}건)")
+                            st.cache_data.clear()
+                        else:
+                            st.error(f"저장 실패: {result.get('error')}")
     else:
         st.warning("목장 데이터가 없습니다.")
 else:

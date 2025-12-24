@@ -675,11 +675,11 @@ def load_custom_css():
         }
 
         .section-title {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 600;
             color: var(--color-primary);
-            margin-bottom: 16px;
-            padding: 8px 0;
+            margin-bottom: 13px;
+            padding: 6px 0;
             display: flex;
             align-items: center;
             gap: 10px;

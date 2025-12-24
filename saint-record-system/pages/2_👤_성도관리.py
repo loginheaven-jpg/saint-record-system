@@ -20,7 +20,7 @@ st.markdown("""
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 24px;
+    margin-bottom: 19px;
     padding: 0 4px;
 }
 .page-header h1 {
@@ -42,7 +42,7 @@ st.markdown("""
     border-radius: 12px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.08);
     overflow-x: auto;
-    margin-bottom: 24px;
+    margin-bottom: 19px;
 }
 
 /* 엑셀 스타일 테이블 */

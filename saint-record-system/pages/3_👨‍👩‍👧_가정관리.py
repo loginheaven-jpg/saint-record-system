@@ -33,7 +33,7 @@ st.markdown("""
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 24px;
+    margin-bottom: 19px;
     padding: 0 4px;
 }
 .page-header h1 {
@@ -134,7 +134,7 @@ st.markdown("""
     display: flex;
     align-items: center;
     gap: 16px;
-    margin-bottom: 24px;
+    margin-bottom: 19px;
     padding-bottom: 16px;
     border-bottom: 2px solid #E8E4DF;
 }

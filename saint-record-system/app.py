@@ -331,12 +331,45 @@ st.markdown("""
     font-size: 10px;
     color: #6B7B8C;
     text-align: center;
-    margin-top: 4px;
+    margin-top: 2px;
+}
+
+/* 달력 아이콘 */
+.calendar-icon {
+    font-size: 36px;
+    line-height: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #C9A962;
+}
+
+/* 날짜 영역 (기준일 + 날짜) */
+.date-area {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 50px;
+}
+.date-area .label {
+    font-size: 11px;
+    color: #6B7B8C;
+    margin-bottom: 2px;
+}
+
+/* 새로고침 영역 (아이콘 + 캐시시간) */
+.refresh-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 50px;
 }
 
 /* 날짜 선택 date_input 스타일 */
 [data-testid="stDateInput"] {
-    max-width: 180px !important;
+    max-width: 90px !important;
 }
 [data-testid="stDateInput"] > div {
     background: white !important;
@@ -367,27 +400,37 @@ st.markdown("""
     padding-right: 0 !important;
 }
 
-/* 새로고침 버튼 스타일 (헤더 영역 내 버튼에만 적용) */
+/* 새로고침 버튼 스타일 (헤더 영역 내 버튼에만 적용) - 아이콘만 */
 .alerts-float + div[data-testid="stHorizontalBlock"] button[data-testid="stBaseButton-secondary"] {
-    width: 40px !important;
-    height: 40px !important;
-    min-width: 40px !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
     padding: 0 !important;
-    background: linear-gradient(135deg, #C9A962 0%, #D4B87A 100%) !important;
+    background: transparent !important;
     border: none !important;
-    border-radius: 12px !important;
-    color: white !important;
-    font-size: 18px !important;
-    box-shadow: 0 4px 12px rgba(201, 169, 98, 0.3) !important;
+    border-radius: 0 !important;
+    color: #6B7B8C !important;
+    font-size: 20px !important;
+    box-shadow: none !important;
     transition: all 0.2s ease !important;
 }
 .alerts-float + div[data-testid="stHorizontalBlock"] button[data-testid="stBaseButton-secondary"]:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 16px rgba(201, 169, 98, 0.4) !important;
+    color: #C9A962 !important;
+    transform: scale(1.1) !important;
 }
 .alerts-float + div[data-testid="stHorizontalBlock"] button[data-testid="stBaseButton-secondary"] p {
     margin: 0 !important;
     line-height: 1 !important;
+}
+
+/* 테이블 첫 번째 열 틀고정 (가로 스크롤 시) */
+[data-testid="stDataFrame"] table td:first-child,
+[data-testid="stDataFrame"] table th:first-child {
+    position: sticky !important;
+    left: 0 !important;
+    background: white !important;
+    z-index: 1 !important;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.05) !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -455,8 +498,8 @@ alerts_html = f'''
 '''
 st.markdown(alerts_html, unsafe_allow_html=True)
 
-# 메인 행: 대시보드(좌) + 날짜박스 + 새로고침(우) - 같은 행
-col_title, col_date_box, col_refresh = st.columns([2.5, 1, 0.3])
+# 메인 행: 대시보드(좌) + 달력아이콘 + 날짜 + 새로고침(우)
+col_title, col_cal_icon, col_date, col_refresh = st.columns([2.5, 0.15, 0.5, 0.25])
 
 with col_title:
     st.markdown('''
@@ -466,9 +509,11 @@ with col_title:
     </div>
     ''', unsafe_allow_html=True)
 
-with col_date_box:
-    # 날짜 선택 (date_input 직접 사용)
-    st.markdown('<div style="font-size:11px;color:#6B7B8C;margin-bottom:2px;">📅 기준일</div>', unsafe_allow_html=True)
+with col_cal_icon:
+    st.markdown('<div class="calendar-icon">📅</div>', unsafe_allow_html=True)
+
+with col_date:
+    st.markdown('<div class="date-area"><span class="label">기준일</span></div>', unsafe_allow_html=True)
     selected_date = st.date_input(
         "기준일",
         value=st.session_state.selected_sunday,
@@ -482,6 +527,7 @@ with col_date_box:
         st.rerun()
 
 with col_refresh:
+    st.markdown('<div class="refresh-col">', unsafe_allow_html=True)
     if st.button("🔄", key="refresh_btn", help="데이터 새로고침"):
         fetch_dashboard_data_from_api.clear()
         clear_sheets_cache()
@@ -490,6 +536,7 @@ with col_refresh:
         st.session_state['dashboard_cache_time'] = 0
         st.rerun()
     st.markdown(f'<div class="cache-time-text">{cache_info}</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
 # 통계 데이터 계산
@@ -812,8 +859,8 @@ if dept_stats:
                     <div class="groups-title">선택된 부서의 {group_label} ({selected_dept_name})</div>
                 </div>''', unsafe_allow_html=True)
 
-                # 전체 + 목장 버튼 그리드 (4열)
-                cols_per_row = 4
+                # 전체 + 목장 버튼 그리드 (5열)
+                cols_per_row = 5
                 all_items = [{'group_id': None, 'name': '전체', 'members_count': total_members}] + groups
 
                 for row_start in range(0, len(all_items), cols_per_row):
@@ -827,7 +874,9 @@ if dept_stats:
 
                             # 선택된 목장 스타일
                             btn_type = "primary" if is_selected else "secondary"
-                            btn_label = f"{group_name} ({members_count})"
+                            # '목장' 단어 제거 (장년부/청년부)
+                            clean_name = group_name.replace('목장', '').strip()
+                            btn_label = f"{clean_name} ({members_count})"
 
                             if st.button(btn_label, key=f"group_btn_{group_id}", use_container_width=True, type=btn_type):
                                 st.session_state.selected_group = group_id
@@ -941,20 +990,21 @@ if dept_stats:
                         # 변경 사항이 있으면 저장 버튼 표시
                         if pending_changes:
                             if st.button(f"💾 {len(pending_changes)}건 저장", key="save_attendance_btn", type="primary", use_container_width=True):
-                                success_count = 0
-                                for change in pending_changes:
-                                    try:
-                                        result = api.toggle_attendance(change['member_id'], change['date'])
-                                        if result.get('success'):
-                                            success_count += 1
-                                    except Exception as toggle_err:
-                                        st.error(f"출석 변경 실패: {toggle_err}")
+                                with st.spinner("저장 중..."):
+                                    success_count = 0
+                                    for change in pending_changes:
+                                        try:
+                                            result = api.toggle_attendance(change['member_id'], change['date'])
+                                            if result.get('success'):
+                                                success_count += 1
+                                        except Exception as toggle_err:
+                                            st.error(f"출석 변경 실패: {toggle_err}")
 
-                                if success_count > 0:
-                                    st.session_state[original_key] = edited_df.copy()
-                                    fetch_dashboard_data_from_api.clear()
-                                    st.toast(f"✅ {success_count}건 저장 완료", icon="✅")
-                                    st.rerun()
+                                    if success_count > 0:
+                                        st.session_state[original_key] = edited_df.copy()
+                                        fetch_dashboard_data_from_api.clear()
+                                        st.toast(f"✅ {success_count}건 저장 완료", icon="✅")
+                                        st.rerun()
                     else:
                         st.markdown(f'''<div class="attendance-table-section">
                             <div class="attendance-table-header">
@@ -964,7 +1014,10 @@ if dept_stats:
                         </div>''', unsafe_allow_html=True)
 
                 except Exception as e:
-                    st.markdown(f'<div class="attendance-table-section"><p style="color:#6B7B8C;font-size:14px;text-align:center;padding:40px;">출석 데이터를 불러올 수 없습니다: {e}</p></div>', unsafe_allow_html=True)
+                    import traceback
+                    error_detail = f"{type(e).__name__}: {e}"
+                    st.markdown(f'<div class="attendance-table-section"><p style="color:#6B7B8C;font-size:14px;text-align:center;padding:40px;">출석 데이터를 불러올 수 없습니다: {error_detail}</p></div>', unsafe_allow_html=True)
+                    print(f"[출석테이블 에러] {traceback.format_exc()}")
 
             else:
                 st.markdown(f'<div class="groups-section"><div class="groups-title">선택된 부서의 목장 ({selected_dept_name})</div><p style="color:#6B7B8C;font-size:14px;text-align:center;padding:20px;">목장 데이터가 없습니다</p></div>', unsafe_allow_html=True)

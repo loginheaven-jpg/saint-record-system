@@ -15,7 +15,7 @@ st.markdown("""
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 24px;
+    margin-bottom: 19px;
     padding: 0 4px;
 }
 .page-header h1 {
