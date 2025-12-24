@@ -671,11 +671,11 @@ def load_custom_css():
         }
 
         .section-title {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 600;
             color: var(--color-primary);
-            margin-bottom: 8px;
-            padding: 2px 0;
+            margin-bottom: 6px;
+            padding: 0;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -683,27 +683,27 @@ def load_custom_css():
         }
 
         .section-title svg {
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             color: var(--color-accent);
             flex-shrink: 0;
         }
 
         /* 섹션 제목 + 인라인 범례 (같은 줄) */
         .section-title-row {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 600;
             color: var(--color-primary);
-            margin-bottom: 8px;
-            padding: 2px 0;
+            margin-bottom: 6px;
+            padding: 0;
             display: flex;
             align-items: center;
             gap: 10px;
             line-height: 1.4;
         }
         .section-title-row svg {
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             color: var(--color-accent);
             flex-shrink: 0;
         }

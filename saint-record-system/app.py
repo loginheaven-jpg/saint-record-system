@@ -334,37 +334,24 @@ st.markdown("""
     margin-top: 2px;
 }
 
-/* 달력 아이콘 */
-.calendar-icon {
-    font-size: 36px;
-    line-height: 50px;
-    height: 50px;
+/* 날짜 영역 - 컴팩트 레이아웃 */
+.date-compact {
     display: flex;
     align-items: center;
-    justify-content: center;
-    color: #C9A962;
+    gap: 8px;
 }
-
-/* 날짜 영역 (기준일 + 날짜) */
-.date-area {
+.date-icon {
+    font-size: 28px;
+    line-height: 1;
+}
+.date-stack {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    height: 50px;
 }
-.date-area .label {
+.date-label {
     font-size: 11px;
     color: #6B7B8C;
-    margin-bottom: 2px;
-}
-
-/* 새로고침 영역 (아이콘 + 캐시시간) */
-.refresh-col {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 50px;
+    line-height: 1.2;
 }
 
 /* 날짜 선택 date_input 스타일 */
@@ -506,8 +493,8 @@ alerts_html = f'''
 '''
 st.markdown(alerts_html, unsafe_allow_html=True)
 
-# 메인 행: 대시보드(좌) + 달력아이콘 + 날짜 + 새로고침(우)
-col_title, col_cal_icon, col_date, col_refresh = st.columns([2.5, 0.15, 0.5, 0.25])
+# 메인 행: 대시보드(좌) + 날짜영역 + 새로고침(우)
+col_title, col_date_area, col_refresh = st.columns([2.5, 0.7, 0.2])
 
 with col_title:
     st.markdown('''
@@ -517,11 +504,9 @@ with col_title:
     </div>
     ''', unsafe_allow_html=True)
 
-with col_cal_icon:
-    st.markdown('<div class="calendar-icon">📅</div>', unsafe_allow_html=True)
-
-with col_date:
-    st.markdown('<div class="date-area"><span class="label">기준일</span></div>', unsafe_allow_html=True)
+with col_date_area:
+    # 달력아이콘 + 기준일/날짜 수직 배치
+    st.markdown('<div class="date-compact"><span class="date-icon">📅</span><div class="date-stack"><span class="date-label">기준일</span></div></div>', unsafe_allow_html=True)
     selected_date = st.date_input(
         "기준일",
         value=st.session_state.selected_sunday,
@@ -535,7 +520,6 @@ with col_date:
         st.rerun()
 
 with col_refresh:
-    st.markdown('<div class="refresh-col">', unsafe_allow_html=True)
     if st.button("🔄", key="refresh_btn", help="데이터 새로고침"):
         fetch_dashboard_data_from_api.clear()
         clear_sheets_cache()
@@ -544,8 +528,6 @@ with col_refresh:
         st.session_state['dashboard_cache_time'] = 0
         st.rerun()
     st.markdown(f'<div class="cache-time-text">{cache_info}</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
 
 # 통계 데이터 계산
 val_total = 0
@@ -704,11 +686,9 @@ if stacked_data:
 else:
     st.markdown('<p style="color:#6B7B8C;font-size:14px;text-align:center;padding:40px;">출석 데이터가 없습니다</p>', unsafe_allow_html=True)
 
-# 차트 레전드 (부서별 4색)
-st.markdown(render_dept_chart_legend(), unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)  # stacked-chart-section 닫기
 
-st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
 
 # ============================================================
 # 섹션 2: 부서별 현황 (2x2 카드 + 목장 그리드)
