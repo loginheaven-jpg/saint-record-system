@@ -712,7 +712,7 @@ def load_custom_css():
             display: flex;
             align-items: center;
             gap: 12px;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: 400;
             color: #6B7B8C;
         }
@@ -832,7 +832,7 @@ def load_custom_css():
         }
 
         .stat-box-label {
-            font-size: 11px;
+            font-size: 13px;
             color: var(--color-text-light);
             margin-bottom: 4px;
             font-weight: 500;

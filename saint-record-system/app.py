@@ -186,7 +186,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.30"  # 버튼 CSS side effect 수정
+APP_VERSION = "v3.31"  # UI 전면 개선: 상단 패딩/폰트 확대/체크박스/기준일 레이아웃
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -235,6 +235,20 @@ st.markdown(get_attendance_table_css(), unsafe_allow_html=True)
 # 헤더 CSS (Option C: 목업 100% 일치)
 st.markdown("""
 <style>
+/* Streamlit 기본 패딩 제거 */
+.stMainBlockContainer, [data-testid="stAppViewContainer"] > section > div {
+    padding-top: 0 !important;
+}
+.block-container {
+    padding-top: 1rem !important;
+}
+
+/* data_editor 체크박스 확대 */
+[data-testid="stDataEditor"] input[type="checkbox"],
+[data-testid="stDataEditor"] [role="checkbox"] {
+    transform: scale(1.25) !important;
+}
+
 /* Option C 헤더 - 목업과 100% 일치 */
 .header-option-c {
     position: relative;
@@ -252,7 +266,7 @@ st.markdown("""
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 12px;
+    font-size: 14px;
     color: #6B7B8C;
     cursor: help;
 }
@@ -328,7 +342,7 @@ st.markdown("""
 
 /* 캐시 시간 텍스트 */
 .cache-time-text {
-    font-size: 10px;
+    font-size: 12px;
     color: #6B7B8C;
     text-align: center;
     margin-top: 2px;
@@ -349,7 +363,7 @@ st.markdown("""
     flex-direction: column;
 }
 .date-label {
-    font-size: 11px;
+    font-size: 13px;
     color: #6B7B8C;
     line-height: 1.2;
 }
@@ -493,8 +507,8 @@ alerts_html = f'''
 '''
 st.markdown(alerts_html, unsafe_allow_html=True)
 
-# 메인 행: 대시보드(좌) + 날짜영역 + 새로고침(우)
-col_title, col_date_area, col_refresh = st.columns([2.5, 0.7, 0.2])
+# 메인 행: 대시보드(좌) + 컨트롤 영역(우)
+col_title, col_controls = st.columns([2.2, 1])
 
 with col_title:
     st.markdown('''
@@ -504,30 +518,37 @@ with col_title:
     </div>
     ''', unsafe_allow_html=True)
 
-with col_date_area:
-    # 달력아이콘 + 기준일/날짜 수직 배치
-    st.markdown('<div class="date-compact"><span class="date-icon">📅</span><div class="date-stack"><span class="date-label">기준일</span></div></div>', unsafe_allow_html=True)
-    selected_date = st.date_input(
-        "기준일",
-        value=st.session_state.selected_sunday,
-        label_visibility="collapsed",
-        key="date_selector"
-    )
-    new_sunday = selected_date if selected_date.weekday() == 6 else get_nearest_sunday(selected_date)
+with col_controls:
+    # 기준일 + 새로고침을 한 줄에 배치
+    ctrl_cols = st.columns([0.12, 0.48, 0.25, 0.15])
 
-    if new_sunday != st.session_state.selected_sunday:
-        st.session_state.selected_sunday = new_sunday
-        st.rerun()
+    with ctrl_cols[0]:
+        st.markdown('<div style="font-size:40px;line-height:1;padding-top:4px;">📅</div>', unsafe_allow_html=True)
 
-with col_refresh:
-    if st.button("🔄", key="refresh_btn", help="데이터 새로고침"):
-        fetch_dashboard_data_from_api.clear()
-        clear_sheets_cache()
-        st.session_state['force_refresh'] = True
-        st.session_state['dashboard_data_loaded'] = False
-        st.session_state['dashboard_cache_time'] = 0
-        st.rerun()
-    st.markdown(f'<div class="cache-time-text">{cache_info}</div>', unsafe_allow_html=True)
+    with ctrl_cols[1]:
+        st.markdown('<div class="date-label">기준일</div>', unsafe_allow_html=True)
+        selected_date = st.date_input(
+            "기준일",
+            value=st.session_state.selected_sunday,
+            label_visibility="collapsed",
+            key="date_selector"
+        )
+        new_sunday = selected_date if selected_date.weekday() == 6 else get_nearest_sunday(selected_date)
+        if new_sunday != st.session_state.selected_sunday:
+            st.session_state.selected_sunday = new_sunday
+            st.rerun()
+
+    with ctrl_cols[2]:
+        if st.button("🔄", key="refresh_btn", help="데이터 새로고침"):
+            fetch_dashboard_data_from_api.clear()
+            clear_sheets_cache()
+            st.session_state['force_refresh'] = True
+            st.session_state['dashboard_data_loaded'] = False
+            st.session_state['dashboard_cache_time'] = 0
+            st.rerun()
+
+    with ctrl_cols[3]:
+        st.markdown(f'<div class="cache-time-text">{cache_info}</div>', unsafe_allow_html=True)
 
 # 통계 데이터 계산
 val_total = 0
@@ -806,19 +827,19 @@ if dept_stats:
                 <div style="background:#F8F6F3;border:2px solid #E8E4DF;border-radius:12px;padding:12px;margin-top:8px;{active_style}">
                     <div style="display:flex;justify-content:space-between;gap:4px;margin-bottom:8px;">
                         <div style="text-align:center;flex:1;">
-                            <div style="font-size:9px;color:#6B7B8C;margin-bottom:1px;">전체</div>
+                            <div style="font-size:11px;color:#6B7B8C;margin-bottom:1px;">전체</div>
                             <div style="font-size:16px;font-weight:700;color:#2C3E50;">{members_count}</div>
                         </div>
                         <div style="text-align:center;flex:1;">
-                            <div style="font-size:9px;color:#6B7B8C;margin-bottom:1px;">출석</div>
+                            <div style="font-size:11px;color:#6B7B8C;margin-bottom:1px;">출석</div>
                             <div style="font-size:16px;font-weight:700;color:#4A9B7F;">{attendance_count}</div>
                         </div>
                         <div style="text-align:center;flex:1;">
-                            <div style="font-size:9px;color:#6B7B8C;margin-bottom:1px;">출석률</div>
+                            <div style="font-size:11px;color:#6B7B8C;margin-bottom:1px;">출석률</div>
                             <div style="font-size:16px;font-weight:700;color:#C9A962;">{attendance_rate}%</div>
                         </div>
                         <div style="text-align:center;flex:1;">
-                            <div style="font-size:9px;color:#6B7B8C;margin-bottom:1px;">{group_label}</div>
+                            <div style="font-size:11px;color:#6B7B8C;margin-bottom:1px;">{group_label}</div>
                             <div style="font-size:16px;font-weight:700;color:#2C3E50;">{groups_count}</div>
                         </div>
                     </div>
