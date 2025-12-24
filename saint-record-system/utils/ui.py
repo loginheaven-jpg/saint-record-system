@@ -689,6 +689,41 @@ def load_custom_css():
             flex-shrink: 0;
         }
 
+        /* 섹션 제목 + 인라인 범례 (같은 줄) */
+        .section-title-row {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--color-primary);
+            margin-bottom: 8px;
+            padding: 2px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            line-height: 1.4;
+        }
+        .section-title-row svg {
+            width: 20px;
+            height: 20px;
+            color: var(--color-accent);
+            flex-shrink: 0;
+        }
+        .inline-legend {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 12px;
+            font-weight: 400;
+            color: #6B7B8C;
+        }
+        .legend-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            margin-right: 4px;
+        }
+
         /* 데이터 영역 좌측 강조 바 */
         .data-content {
             border-left: 4px solid var(--color-accent);

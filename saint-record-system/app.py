@@ -238,7 +238,7 @@ st.markdown("""
 /* Option C 헤더 - 목업과 100% 일치 */
 .header-option-c {
     position: relative;
-    margin-bottom: 4px;
+    margin-bottom: 0;
 }
 
 /* 알림 영역 (우측 상단 floating) */
@@ -246,7 +246,7 @@ st.markdown("""
     display: flex;
     justify-content: flex-end;
     gap: 16px;
-    margin-bottom: 4px;
+    margin-bottom: 0;
 }
 .alert-inline {
     display: flex;
@@ -545,7 +545,7 @@ with col_refresh:
         st.rerun()
     st.markdown(f'<div class="cache-time-text">{cache_info}</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
-st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
 
 # 통계 데이터 계산
 val_total = 0
@@ -601,14 +601,20 @@ with stat_cols[3]:
     html_3 = render_stat_card("user-plus", "gold", str(new_count), "신규 등록", new_trend_str, new_trend_dir, False)
     st.markdown(html_3, unsafe_allow_html=True)
 
-st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height: 2px;'></div>", unsafe_allow_html=True)
 
 # ============================================================
 # 섹션 1: 8주 출석 현황 (스택 바 차트)
 # ============================================================
 bar_chart_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>'
+inline_legend = '''<div class="inline-legend">
+    <span class="legend-dot" style="background:#6B5B47;"></span>장년
+    <span class="legend-dot" style="background:#556B82;"></span>청년
+    <span class="legend-dot" style="background:#6B8E23;"></span>청소년
+    <span class="legend-dot" style="background:#D2691E;"></span>어린이
+</div>'''
 st.markdown(f'''<div class="stacked-chart-section">
-    <div class="section-title">{bar_chart_svg}최근 8주 출석 현황</div>
+    <div class="section-title-row">{bar_chart_svg}<span>최근 8주 출석 현황</span>{inline_legend}</div>
 ''', unsafe_allow_html=True)
 
 # 스택 바 차트 데이터
@@ -957,7 +963,7 @@ if dept_stats:
                         # 편집 가능한 테이블
                         column_config = {
                             'member_id': None,  # 숨김
-                            '이름': st.column_config.TextColumn('이름', disabled=True, width='medium'),
+                            '이름': st.column_config.TextColumn('이름', disabled=True, width='small'),
                             '목장': st.column_config.TextColumn('목장', disabled=True, width='small'),
                         }
                         # 주차 컬럼은 체크박스로
