@@ -567,11 +567,9 @@ def load_custom_css():
            Stacked Bar Chart - dashboard_v3.html
            ======================================== */
         .stacked-chart-section {
-            background: var(--color-surface);
-            border-radius: var(--radius-lg);
-            padding: 28px;
-            box-shadow: var(--shadow-soft);
-            margin-bottom: 32px;
+            background: transparent;
+            padding: 0;
+            margin-bottom: 16px;
         }
 
         .chart-wrapper {
@@ -667,19 +665,17 @@ def load_custom_css():
            Department Cards - dashboard_v3.html
            ======================================== */
         .hierarchy-section {
-            background: var(--color-surface);
-            border-radius: var(--radius-lg);
-            padding: 28px;
-            box-shadow: var(--shadow-soft);
-            margin-bottom: 32px;
+            background: transparent;
+            padding: 0;
+            margin-bottom: 16px;
         }
 
         .section-title {
             font-size: 18px;
             font-weight: 600;
             color: var(--color-primary);
-            margin-bottom: 13px;
-            padding: 6px 0;
+            margin-bottom: 8px;
+            padding: 2px 0;
             display: flex;
             align-items: center;
             gap: 10px;

@@ -238,7 +238,7 @@ st.markdown("""
 /* Option C 헤더 - 목업과 100% 일치 */
 .header-option-c {
     position: relative;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 }
 
 /* 알림 영역 (우측 상단 floating) */
@@ -246,7 +246,7 @@ st.markdown("""
     display: flex;
     justify-content: flex-end;
     gap: 16px;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 }
 .alert-inline {
     display: flex;
@@ -423,14 +423,22 @@ st.markdown("""
     line-height: 1 !important;
 }
 
-/* 테이블 첫 번째 열 틀고정 (가로 스크롤 시) */
-[data-testid="stDataFrame"] table td:first-child,
-[data-testid="stDataFrame"] table th:first-child {
-    position: sticky !important;
-    left: 0 !important;
-    background: white !important;
-    z-index: 1 !important;
-    box-shadow: 2px 0 4px rgba(0,0,0,0.05) !important;
+/* 출석 테이블 컨테이너 - 이름 열 고정을 위한 레이아웃 */
+.attendance-table-wrapper {
+    display: flex;
+    gap: 0;
+    overflow: hidden;
+}
+.attendance-fixed-col {
+    flex-shrink: 0;
+    background: white;
+    z-index: 10;
+    border-right: 2px solid #E8E4DF;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.08);
+}
+.attendance-scroll-col {
+    flex: 1;
+    overflow-x: auto;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -537,7 +545,7 @@ with col_refresh:
         st.rerun()
     st.markdown(f'<div class="cache-time-text">{cache_info}</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
-st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
 
 # 통계 데이터 계산
 val_total = 0
@@ -593,7 +601,7 @@ with stat_cols[3]:
     html_3 = render_stat_card("user-plus", "gold", str(new_count), "신규 등록", new_trend_str, new_trend_dir, False)
     st.markdown(html_3, unsafe_allow_html=True)
 
-st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
 
 # ============================================================
 # 섹션 1: 8주 출석 현황 (스택 바 차트)
