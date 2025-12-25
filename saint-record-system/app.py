@@ -186,7 +186,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.33"  # 우상단 컨트롤 레이아웃 컴팩트화
+APP_VERSION = "v3.34"  # 출석입력 페이지 전면 개선
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False

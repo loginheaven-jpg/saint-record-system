@@ -19,7 +19,7 @@ st.markdown("""
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 26px;
+    margin-bottom: 20px;
     padding: 0 4px;
 }
 .page-header h1 {
@@ -35,52 +35,68 @@ st.markdown("""
     margin: 0;
 }
 
-/* 날짜 선택 카드 */
+/* 날짜 카드 */
 .date-card {
     background: linear-gradient(135deg, #2C3E50 0%, #3d5a73 100%);
-    border-radius: 20px;
-    padding: 24px 32px;
+    border-radius: 16px;
+    padding: 20px 24px;
     color: white;
-    margin-bottom: 28px;
+    margin-bottom: 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
-.date-card-left {
+.date-card-center {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 16px;
+    flex: 1;
+    justify-content: center;
 }
 .date-icon {
-    width: 60px;
-    height: 60px;
-    background: rgba(255,255,255,0.15);
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
+    font-size: 24px;
 }
 .date-info h2 {
     font-family: 'Playfair Display', serif;
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 600;
-    margin: 0 0 4px 0;
+    margin: 0 0 2px 0;
 }
 .date-info p {
-    font-size: 14px;
+    font-size: 13px;
     color: rgba(255,255,255,0.7);
     margin: 0;
+}
+.nav-arrow {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    border-radius: 12px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.nav-arrow:hover {
+    background: rgba(255,255,255,0.25);
+}
+.nav-arrow.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
 }
 
 /* 통계 바 */
 .stats-bar {
     display: flex;
     gap: 24px;
-    padding: 20px 24px;
+    padding: 16px 20px;
     background: #F8F6F3;
-    border-radius: 16px;
-    margin-bottom: 19px;
+    border-radius: 12px;
+    margin-bottom: 16px;
 }
 .stat-item {
     display: flex;
@@ -105,40 +121,38 @@ st.markdown("""
     font-family: 'Playfair Display', serif;
 }
 
-/* 성도 행 */
+/* 성도 행 - 아바타 없이 간결하게 */
 .member-row {
     background: white;
-    border-radius: 12px;
-    padding: 16px 20px;
-    margin-bottom: 8px;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 6px;
     display: flex;
     align-items: center;
-    gap: 16px;
-    box-shadow: 0 2px 8px rgba(44, 62, 80, 0.04);
-    transition: all 0.3s ease;
+    gap: 12px;
+    box-shadow: 0 1px 4px rgba(44, 62, 80, 0.04);
+    transition: all 0.2s ease;
 }
 .member-row:hover {
-    transform: translateX(4px);
-    box-shadow: 0 4px 16px rgba(44, 62, 80, 0.08);
+    background: #FAFAFA;
+    box-shadow: 0 2px 8px rgba(44, 62, 80, 0.08);
 }
-.member-avatar {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    font-weight: 600;
-    color: white;
-    flex-shrink: 0;
-}
-.member-avatar.male { background: linear-gradient(135deg, #3498db 0%, #5faee3 100%); }
-.member-avatar.female { background: linear-gradient(135deg, #e91e63 0%, #f06292 100%); }
-
 .member-info { flex: 1; }
 .member-name { font-size: 15px; font-weight: 600; color: #2C3E50; }
 .member-role { font-size: 12px; color: #6B7B8C; }
+
+/* 주차 네비게이션 버튼 스타일 */
+div[data-testid="stHorizontalBlock"]:has(.week-nav-btn) button {
+    background: rgba(255,255,255,0.15) !important;
+    border: none !important;
+    color: white !important;
+    font-size: 20px !important;
+    padding: 8px 16px !important;
+    border-radius: 12px !important;
+}
+div[data-testid="stHorizontalBlock"]:has(.week-nav-btn) button:hover {
+    background: rgba(255,255,255,0.25) !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -194,7 +208,7 @@ st.markdown("""
 <div class="page-header">
     <div>
         <h1>출석 입력</h1>
-        <p>주일 예배 출석을 기록합니다</p>
+        <p>주일 예배 출석을 기록합니다 (향후 목장 출석 추가 예정)</p>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -205,32 +219,7 @@ if db_connected:
         departments = load_departments()
         groups = load_groups()
 
-    # 날짜 선택
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        today = date.today()
-        default_sunday = get_sunday_of_week(today)
-        selected_date = st.date_input("출석 날짜", value=default_sunday, label_visibility="collapsed")
-
-    year = selected_date.year
-    week_no = get_week_number(selected_date)
-
-    weekday_names = ['월', '화', '수', '목', '금', '토', '일']
-    weekday = weekday_names[selected_date.weekday()]
-
-    st.markdown(f"""
-    <div class="date-card">
-        <div class="date-card-left">
-            <div class="date-icon">📅</div>
-            <div class="date-info">
-                <h2>{selected_date.year}년 {selected_date.month}월 {selected_date.day}일 ({weekday})</h2>
-                <p>{year}년 {week_no}주차 예배</p>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # 목장 선택
+    # === 1. 목장 선택 (맨 위) ===
     if not groups.empty:
         group_list = groups['group_name'].tolist()
         group_ids = groups['group_id'].tolist()
@@ -240,10 +229,62 @@ if db_connected:
         if 'attendance_data' not in st.session_state:
             st.session_state.attendance_data = {}
 
+        # 날짜 상태 초기화
+        if 'selected_date' not in st.session_state:
+            st.session_state.selected_date = get_sunday_of_week(date.today())
+
         selected_group_name = st.selectbox("목장 선택", group_list, index=st.session_state.selected_group_idx, key="group_select")
         selected_group_idx = group_list.index(selected_group_name)
         selected_group_id = group_ids[selected_group_idx]
 
+        # === 2. 날짜 카드 + 주차 네비게이션 ===
+        selected_date = st.session_state.selected_date
+        today = date.today()
+        this_sunday = get_sunday_of_week(today)
+
+        year = selected_date.year
+        week_no = get_week_number(selected_date)
+        weekday_names = ['월', '화', '수', '목', '금', '토', '일']
+        weekday = weekday_names[selected_date.weekday()]
+
+        # 미래 주일인지 확인
+        is_future = selected_date > this_sunday
+
+        # 날짜 카드 영역
+        col_prev, col_date, col_next = st.columns([0.8, 5, 0.8])
+
+        with col_prev:
+            st.markdown('<div class="week-nav-btn"></div>', unsafe_allow_html=True)
+            if st.button("◀", key="prev_week", use_container_width=True):
+                st.session_state.selected_date = selected_date - timedelta(days=7)
+                st.rerun()
+
+        with col_date:
+            st.markdown(f"""
+            <div class="date-card">
+                <div class="date-card-center">
+                    <div class="date-icon">📅</div>
+                    <div class="date-info">
+                        <h2>{selected_date.year}년 {selected_date.month}월 {selected_date.day}일 ({weekday})</h2>
+                        <p>{year}년 {week_no}주차 예배</p>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with col_next:
+            st.markdown('<div class="week-nav-btn"></div>', unsafe_allow_html=True)
+            # 미래면 버튼 비활성화
+            if not is_future:
+                if st.button("▶", key="next_week", use_container_width=True):
+                    next_date = selected_date + timedelta(days=7)
+                    if next_date <= this_sunday:
+                        st.session_state.selected_date = next_date
+                        st.rerun()
+            else:
+                st.button("▶", key="next_week_disabled", use_container_width=True, disabled=True)
+
+        # 데이터 로드
         members = load_members_by_group(selected_group_id)
         existing_attendance = load_attendance(year, week_no)
 
@@ -275,10 +316,9 @@ if db_connected:
                     st.session_state.attendance_data[attendance_key][member_id] = '0'
                 st.rerun()
 
-        # 통계 (출석/결석 이원화, 기존 온라인은 출석으로 집계)
+        # === 3. 통계 바 ===
         attend_counts = {'1': 0, '0': 0}
         for member_id, status in st.session_state.attendance_data.get(attendance_key, {}).items():
-            # 기존 '2' (온라인)은 '1' (출석)으로 처리
             if status == '2':
                 status = '1'
             attend_counts[status] = attend_counts.get(status, 0) + 1
@@ -304,25 +344,20 @@ if db_connected:
         </div>
         """, unsafe_allow_html=True)
 
-        # 성도 목록
+        # === 4. 성도 목록 (아바타 제거) ===
         if not members.empty:
             for idx, member in members.iterrows():
                 member_id = member.get('member_id')
                 name = member.get('name', '?')
-                gender = member.get('gender', '')
                 church_role = member.get('church_role', '')
                 group_role = member.get('group_role', '')
 
                 current_status = st.session_state.attendance_data.get(attendance_key, {}).get(member_id, '0')
-                avatar_class = 'male' if gender == '남' else 'female'
-                initial = name[0] if name else '?'
 
-                col1, col2, col3, col4 = st.columns([0.5, 2, 1.5, 2])
+                # 아바타 컬럼 제거: 이름/역할, 상태, 버튼만 표시
+                col1, col2, col3 = st.columns([2.5, 1.5, 2])
 
                 with col1:
-                    st.markdown(f'<div class="member-avatar {avatar_class}">{initial}</div>', unsafe_allow_html=True)
-
-                with col2:
                     role_text = church_role
                     if group_role and group_role != '목원':
                         role_text = f"{group_role} · {church_role}"
@@ -333,14 +368,13 @@ if db_connected:
                     </div>
                     ''', unsafe_allow_html=True)
 
-                with col3:
-                    # 기존 '2' (온라인)은 '1' (출석)으로 표시
+                with col2:
                     display_status = '1' if current_status == '2' else current_status
                     status_text = {'1': '✅ 출석', '0': '❌ 결석'}
                     status_color = {'1': '#4A9B7F', '0': '#E8985E'}
-                    st.markdown(f'<div style="font-weight:600; color:{status_color.get(display_status, "#4A9B7F")}">{status_text.get(display_status, "✅ 출석")}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="font-weight:600; color:{status_color.get(display_status, "#4A9B7F")}; padding-top:8px;">{status_text.get(display_status, "✅ 출석")}</div>', unsafe_allow_html=True)
 
-                with col4:
+                with col3:
                     btn_cols = st.columns(2)
                     with btn_cols[0]:
                         if st.button("출석", key=f"p_{member_id}", use_container_width=True):
@@ -351,18 +385,17 @@ if db_connected:
                             st.session_state.attendance_data[attendance_key][member_id] = '0'
                             st.rerun()
 
-                st.markdown("<hr style='border:none;border-top:1px solid #E8E4DF;margin:8px 0;'>", unsafe_allow_html=True)
+                st.markdown("<hr style='border:none;border-top:1px solid #E8E4DF;margin:6px 0;'>", unsafe_allow_html=True)
         else:
             st.info("해당 목장에 등록된 성도가 없습니다.")
 
-        st.markdown("<div style='height:24px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
 
         if st.button("💾 출석 저장", use_container_width=True, type="primary"):
             with st.spinner("저장 중..."):
                 if not members.empty:
                     records = []
                     for member_id, attend_type in st.session_state.attendance_data.get(attendance_key, {}).items():
-                        # 기존 '2' (온라인)은 '1' (출석)으로 변환
                         records.append(AttendanceCreate(
                             member_id=member_id,
                             attend_date=selected_date,
