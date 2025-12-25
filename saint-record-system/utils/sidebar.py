@@ -4,7 +4,7 @@
 """
 import streamlit as st
 
-APP_VERSION = "v3.30"
+APP_VERSION = "v3.36"
 
 def render_shared_sidebar(current_page: str = None):
     """
@@ -46,14 +46,6 @@ def render_shared_sidebar(current_page: str = None):
             st.markdown('<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;background:rgba(201,169,98,0.15);color:white;margin:0 0.5rem 4px;position:relative;"><div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#C9A962;border-radius:0 2px 2px 0;"></div><span style="font-size:18px;">👤</span><span style="font-size:14px;font-weight:500;">성도 관리</span></div>', unsafe_allow_html=True)
         else:
             st.page_link("pages/2_👤_성도관리.py", label="👤 성도 관리")
-
-        # 가정 관리 (서브메뉴)
-        if current_page == "family":
-            st.markdown('<div style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;background:rgba(201,169,98,0.15);color:white;margin:0 0.5rem 4px;position:relative;margin-left:1rem;"><div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#C9A962;border-radius:0 2px 2px 0;"></div><span style="font-size:18px;">👨‍👩‍👧</span><span style="font-size:14px;font-weight:500;">가정 관리</span></div>', unsafe_allow_html=True)
-        else:
-            st.markdown('<div class="nav-sub-container">', unsafe_allow_html=True)
-            st.page_link("pages/3_👨‍👩‍👧_가정관리.py", label="👨‍👩‍👧 가정 관리")
-            st.markdown('</div>', unsafe_allow_html=True)
 
         # 조회 섹션 라벨
         st.markdown('<div style="padding:0 0.5rem;margin-top:20px;"><div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;">조회</div></div>', unsafe_allow_html=True)
