@@ -186,7 +186,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.36"  # 사이드바에서 가정관리 메뉴 제거
+APP_VERSION = "v3.37"  # 헤더 레이아웃: 주차이동 버튼 방식으로 변경
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -249,56 +249,33 @@ st.markdown("""
     transform: scale(1.25) !important;
 }
 
-/* 헤더 컨트롤 영역 컬럼 간격 최소화 */
-[data-testid="stHorizontalBlock"]:has(.ctrl-date-wrapper) {
-    gap: 5px !important;
+/* 헤더 컨트롤 영역 - 주차 이동 버튼 방식 */
+[data-testid="stHorizontalBlock"]:has(.date-nav-area) {
+    gap: 4px !important;
 }
-[data-testid="stHorizontalBlock"]:has(.ctrl-date-wrapper) [data-testid="column"] {
-    padding: 0 !important;
+[data-testid="stHorizontalBlock"]:has(.date-nav-area) [data-testid="column"] {
+    padding: 0 2px !important;
     min-width: auto !important;
 }
-
-/* 기준일 라벨 인라인 */
-.ctrl-inline-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 32px;
-}
-.ctrl-inline-label .label-text {
-    font-size: 12px;
-    color: #6B7B8C;
-}
-
-/* 날짜 입력 컴팩트 */
-.ctrl-date-wrapper [data-testid="stDateInput"] {
-    max-width: 100px !important;
-}
-.ctrl-date-wrapper [data-testid="stDateInput"] > div {
-    background: white !important;
+/* 주차 이동 버튼 스타일 */
+[data-testid="stHorizontalBlock"]:has(.date-nav-area) button {
+    background: #F8F6F3 !important;
     border: 1px solid #E8E4DF !important;
-    border-radius: 8px !important;
-}
-.ctrl-date-wrapper [data-testid="stDateInput"] input {
-    font-size: 13px !important;
-    padding: 6px 10px !important;
-}
-
-/* 새로고침 버튼 - 아이콘만 표시 */
-[data-testid="stHorizontalBlock"]:has(.ctrl-date-wrapper) button[data-testid="stBaseButton-secondary"] {
-    background: transparent !important;
-    border: none !important;
+    border-radius: 6px !important;
+    padding: 4px 10px !important;
+    min-height: 32px !important;
+    font-size: 16px !important;
     box-shadow: none !important;
-    padding: 4px !important;
-    min-height: auto !important;
-    font-size: 24px !important;
 }
-[data-testid="stHorizontalBlock"]:has(.ctrl-date-wrapper) button[data-testid="stBaseButton-secondary"]:hover {
-    background: rgba(0,0,0,0.05) !important;
-    transform: scale(1.1);
+[data-testid="stHorizontalBlock"]:has(.date-nav-area) button:hover {
+    background: #F0EDE8 !important;
+    border-color: #C9A962 !important;
 }
-[data-testid="stHorizontalBlock"]:has(.ctrl-date-wrapper) button[data-testid="stBaseButton-secondary"] p {
-    font-size: 24px !important;
+[data-testid="stHorizontalBlock"]:has(.date-nav-area) button:disabled {
+    opacity: 0.4 !important;
+}
+[data-testid="stHorizontalBlock"]:has(.date-nav-area) button p {
+    font-size: 16px !important;
     margin: 0 !important;
 }
 
@@ -567,28 +544,36 @@ with col_title:
     st.markdown('<div class="title-section"><h1>대시보드</h1></div>', unsafe_allow_html=True)
 
 with col_controls:
-    # 모든 요소를 한 줄에 컴팩트하게 배치: 📅기준일 [날짜] 🔄 0분전
-    ctrl_cols = st.columns([0.15, 0.12, 0.35, 0.18, 0.2])
+    # 주차 이동 방식: [◀] [📅 날짜] [▶] [🔄] [캐시시간]
+    st.markdown('<div class="date-nav-area"></div>', unsafe_allow_html=True)
+    selected_sunday = st.session_state.selected_sunday
+    today_sunday = get_sunday_of_week(date.today())
+    is_future = selected_sunday >= today_sunday
+
+    ctrl_cols = st.columns([0.12, 0.5, 0.12, 0.12, 0.14])
 
     with ctrl_cols[0]:
-        st.markdown('<div style="font-size:28px;padding-top:6px;">📅</div>', unsafe_allow_html=True)
+        if st.button("◀", key="prev_week", help="이전 주"):
+            st.session_state.selected_sunday = selected_sunday - timedelta(days=7)
+            st.rerun()
 
     with ctrl_cols[1]:
-        st.markdown('<div style="font-size:12px;color:#6B7B8C;padding-top:12px;">기준일</div>', unsafe_allow_html=True)
+        date_display = f"{selected_sunday.month}/{selected_sunday.day}"
+        st.markdown(f'''
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;padding:4px 0;">
+            <span style="font-size:18px;">📅</span>
+            <span style="font-size:14px;font-weight:600;color:#2C3E50;">{date_display}</span>
+            <span style="font-size:12px;color:#6B7B8C;">({weekday})</span>
+        </div>
+        ''', unsafe_allow_html=True)
 
     with ctrl_cols[2]:
-        st.markdown('<div class="ctrl-date-wrapper">', unsafe_allow_html=True)
-        selected_date = st.date_input(
-            "기준일",
-            value=st.session_state.selected_sunday,
-            label_visibility="collapsed",
-            key="date_selector"
-        )
-        st.markdown('</div>', unsafe_allow_html=True)
-        new_sunday = selected_date if selected_date.weekday() == 6 else get_nearest_sunday(selected_date)
-        if new_sunday != st.session_state.selected_sunday:
-            st.session_state.selected_sunday = new_sunday
-            st.rerun()
+        if is_future:
+            st.button("▶", key="next_week_disabled", disabled=True, help="미래 날짜 불가")
+        else:
+            if st.button("▶", key="next_week", help="다음 주"):
+                st.session_state.selected_sunday = selected_sunday + timedelta(days=7)
+                st.rerun()
 
     with ctrl_cols[3]:
         if st.button("🔄", key="refresh_btn", help="데이터 새로고침"):
@@ -600,7 +585,7 @@ with col_controls:
             st.rerun()
 
     with ctrl_cols[4]:
-        st.markdown(f'<div style="font-size:12px;color:#6B7B8C;padding-top:10px;">{cache_info}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="font-size:11px;color:#6B7B8C;padding-top:8px;text-align:center;">{cache_info}</div>', unsafe_allow_html=True)
 
 # 통계 데이터 계산
 val_total = 0
