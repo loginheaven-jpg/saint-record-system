@@ -1530,10 +1530,8 @@ def get_attendance_table_css() -> str:
     return '''
     <style>
     .attendance-table-section {
-        background: var(--color-surface, #FFFFFF);
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 2px 20px rgba(44, 62, 80, 0.06);
+        background: transparent;
+        padding: 0;
         margin-top: 24px;
     }
 
@@ -1541,15 +1539,18 @@ def get_attendance_table_css() -> str:
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 20px;
+        margin-bottom: 12px;
         flex-wrap: wrap;
         gap: 12px;
     }
 
     .attendance-table-title {
-        font-size: 18px;
+        font-size: 20px;
         font-weight: 600;
         color: #2C3E50;
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
 
     .attendance-table-stat {

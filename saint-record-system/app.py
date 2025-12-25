@@ -186,7 +186,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.31"  # UI 전면 개선: 상단 패딩/폰트 확대/체크박스/기준일 레이아웃
+APP_VERSION = "v3.32"  # UI 미세조정: 헤더 정렬, 섹션 간격, 차트 폰트 확대
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -247,6 +247,12 @@ st.markdown("""
 [data-testid="stDataEditor"] input[type="checkbox"],
 [data-testid="stDataEditor"] [role="checkbox"] {
     transform: scale(1.25) !important;
+}
+
+/* 새로고침 버튼 숨김 (아이콘만 사용) */
+button[data-testid="stBaseButton-secondary"]:has(p:contains("새로고침")),
+button[key="refresh_btn"] {
+    display: none !important;
 }
 
 /* Option C 헤더 - 목업과 100% 일치 */
@@ -508,25 +514,20 @@ alerts_html = f'''
 st.markdown(alerts_html, unsafe_allow_html=True)
 
 # 메인 행: 대시보드(좌) + 컨트롤 영역(우)
-col_title, col_controls = st.columns([2.2, 1])
+col_title, col_controls = st.columns([1.8, 1.2])
 
 with col_title:
-    st.markdown('''
-    <div class="title-section">
-        <h1>대시보드</h1>
-        <p>예봄교회 성도 현황</p>
-    </div>
-    ''', unsafe_allow_html=True)
+    st.markdown('<div class="title-section"><h1>대시보드</h1></div>', unsafe_allow_html=True)
 
 with col_controls:
-    # 기준일 + 새로고침을 한 줄에 배치
-    ctrl_cols = st.columns([0.12, 0.48, 0.25, 0.15])
+    # 순서: 달력아이콘 + 기준일/날짜 + 새로고침 + 시간 (우측 정렬)
+    ctrl_cols = st.columns([0.08, 0.35, 0.08, 0.12])
 
     with ctrl_cols[0]:
-        st.markdown('<div style="font-size:40px;line-height:1;padding-top:4px;">📅</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:36px;line-height:1;padding-top:12px;">📅</div>', unsafe_allow_html=True)
 
     with ctrl_cols[1]:
-        st.markdown('<div class="date-label">기준일</div>', unsafe_allow_html=True)
+        st.markdown('<div class="date-label" style="padding-top:4px;">기준일</div>', unsafe_allow_html=True)
         selected_date = st.date_input(
             "기준일",
             value=st.session_state.selected_sunday,
@@ -539,7 +540,8 @@ with col_controls:
             st.rerun()
 
     with ctrl_cols[2]:
-        if st.button("🔄", key="refresh_btn", help="데이터 새로고침"):
+        st.markdown('<div style="font-size:24px;padding-top:14px;cursor:pointer;" title="데이터 새로고침" id="refresh-icon">🔄</div>', unsafe_allow_html=True)
+        if st.button("새로고침", key="refresh_btn", help="데이터 새로고침"):
             fetch_dashboard_data_from_api.clear()
             clear_sheets_cache()
             st.session_state['force_refresh'] = True
@@ -548,7 +550,7 @@ with col_controls:
             st.rerun()
 
     with ctrl_cols[3]:
-        st.markdown(f'<div class="cache-time-text">{cache_info}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="cache-time-text" style="padding-top:16px;">{cache_info}</div>', unsafe_allow_html=True)
 
 # 통계 데이터 계산
 val_total = 0
@@ -604,7 +606,7 @@ with stat_cols[3]:
     html_3 = render_stat_card("user-plus", "gold", str(new_count), "신규 등록", new_trend_str, new_trend_dir, False)
     st.markdown(html_3, unsafe_allow_html=True)
 
-st.markdown("<div style='height: 2px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
 # ============================================================
 # 섹션 1: 8주 출석 현황 (스택 바 차트)
@@ -641,7 +643,7 @@ if stacked_data:
         x=weeks, y=children_data, name='어린이부',
         marker_color='#D2691E', marker_line_width=0,
         text=children_data, textposition='inside',
-        textfont=dict(color='white', size=12),
+        textfont=dict(color='white', size=14),
         insidetextanchor='middle', textangle=0
     ))
     # 청소년부 - 숫자 내부 표시, textangle=0으로 회전 방지
@@ -649,7 +651,7 @@ if stacked_data:
         x=weeks, y=teens_data, name='청소년부',
         marker_color='#6B8E23', marker_line_width=0,
         text=teens_data, textposition='inside',
-        textfont=dict(color='white', size=12),
+        textfont=dict(color='white', size=14),
         insidetextanchor='middle', textangle=0
     ))
     # 청년부 - 숫자 내부 표시, textangle=0으로 회전 방지
@@ -657,7 +659,7 @@ if stacked_data:
         x=weeks, y=youth_data, name='청년부',
         marker_color='#556B82', marker_line_width=0,
         text=youth_data, textposition='inside',
-        textfont=dict(color='white', size=12),
+        textfont=dict(color='white', size=14),
         insidetextanchor='middle', textangle=0
     ))
     # 장년부 (맨 위) - 숫자 내부 표시, textangle=0으로 회전 방지
@@ -665,7 +667,7 @@ if stacked_data:
         x=weeks, y=adults_data, name='장년부',
         marker_color='#6B5B47', marker_line_width=0,
         text=adults_data, textposition='inside',
-        textfont=dict(color='white', size=12),
+        textfont=dict(color='white', size=14),
         insidetextanchor='middle', textangle=0
     ))
 
@@ -674,7 +676,7 @@ if stacked_data:
         x=weeks, y=totals, mode='text',
         text=[str(t) for t in totals],
         textposition='top center',
-        textfont=dict(color='#2C3E50', size=13, weight='bold'),
+        textfont=dict(color='#2C3E50', size=14, weight='bold'),
         showlegend=False
     ))
 
@@ -709,7 +711,7 @@ else:
 
 st.markdown('</div>', unsafe_allow_html=True)  # stacked-chart-section 닫기
 
-st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
 
 # ============================================================
 # 섹션 2: 부서별 현황 (2x2 카드 + 목장 그리드)
@@ -718,6 +720,8 @@ hierarchy_svg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 st.markdown(f'''<div class="hierarchy-section">
     <div class="section-title">{hierarchy_svg}부서별 현황</div>
 ''', unsafe_allow_html=True)
+
+st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
 
 # 부서 선택 상태 초기화
 if 'selected_dept' not in st.session_state:
@@ -811,7 +815,7 @@ if dept_stats:
                     # 점 아래 숫자 (매 2번째만 표시하여 겹침 방지)
                     if idx % 2 == 1 or len(trend_data) <= 4:
                         labels += f'<circle cx="{x}" cy="{y}" r="3" fill="{dept_color}"/>'
-                        labels += f'<text x="{x}" y="{y + 12}" text-anchor="middle" font-size="8" fill="#6B7B8C">{val}</text>'
+                        labels += f'<text x="{x}" y="{y + 14}" text-anchor="middle" font-size="11" fill="#6B7B8C">{val}</text>'
                     else:
                         labels += f'<circle cx="{x}" cy="{y}" r="2" fill="{dept_color}"/>'
 
