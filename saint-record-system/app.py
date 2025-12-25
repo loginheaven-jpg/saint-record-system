@@ -186,7 +186,7 @@ def get_dashboard_data(base_date: str, force_refresh=False):
     return fetch_dashboard_data_from_api(base_date)
 
 # 앱 버전 체크 - 새 버전 배포 시 캐시 자동 클리어
-APP_VERSION = "v3.32"  # UI 미세조정: 헤더 정렬, 섹션 간격, 차트 폰트 확대
+APP_VERSION = "v3.33"  # 우상단 컨트롤 레이아웃 컴팩트화
 if st.session_state.get('app_version') != APP_VERSION:
     st.session_state['app_version'] = APP_VERSION
     st.session_state['dashboard_data_loaded'] = False
@@ -249,10 +249,57 @@ st.markdown("""
     transform: scale(1.25) !important;
 }
 
-/* 새로고침 버튼 숨김 (아이콘만 사용) */
-button[data-testid="stBaseButton-secondary"]:has(p:contains("새로고침")),
-button[key="refresh_btn"] {
-    display: none !important;
+/* 헤더 컨트롤 영역 컬럼 간격 최소화 */
+[data-testid="stHorizontalBlock"]:has(.ctrl-date-wrapper) {
+    gap: 5px !important;
+}
+[data-testid="stHorizontalBlock"]:has(.ctrl-date-wrapper) [data-testid="column"] {
+    padding: 0 !important;
+    min-width: auto !important;
+}
+
+/* 기준일 라벨 인라인 */
+.ctrl-inline-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 32px;
+}
+.ctrl-inline-label .label-text {
+    font-size: 12px;
+    color: #6B7B8C;
+}
+
+/* 날짜 입력 컴팩트 */
+.ctrl-date-wrapper [data-testid="stDateInput"] {
+    max-width: 100px !important;
+}
+.ctrl-date-wrapper [data-testid="stDateInput"] > div {
+    background: white !important;
+    border: 1px solid #E8E4DF !important;
+    border-radius: 8px !important;
+}
+.ctrl-date-wrapper [data-testid="stDateInput"] input {
+    font-size: 13px !important;
+    padding: 6px 10px !important;
+}
+
+/* 새로고침 버튼 - 아이콘만 표시 */
+[data-testid="stHorizontalBlock"]:has(.ctrl-date-wrapper) button[data-testid="stBaseButton-secondary"] {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 4px !important;
+    min-height: auto !important;
+    font-size: 24px !important;
+}
+[data-testid="stHorizontalBlock"]:has(.ctrl-date-wrapper) button[data-testid="stBaseButton-secondary"]:hover {
+    background: rgba(0,0,0,0.05) !important;
+    transform: scale(1.1);
+}
+[data-testid="stHorizontalBlock"]:has(.ctrl-date-wrapper) button[data-testid="stBaseButton-secondary"] p {
+    font-size: 24px !important;
+    margin: 0 !important;
 }
 
 /* Option C 헤더 - 목업과 100% 일치 */
@@ -514,34 +561,37 @@ alerts_html = f'''
 st.markdown(alerts_html, unsafe_allow_html=True)
 
 # 메인 행: 대시보드(좌) + 컨트롤 영역(우)
-col_title, col_controls = st.columns([1.8, 1.2])
+col_title, col_controls = st.columns([1.6, 1.4])
 
 with col_title:
     st.markdown('<div class="title-section"><h1>대시보드</h1></div>', unsafe_allow_html=True)
 
 with col_controls:
-    # 순서: 달력아이콘 + 기준일/날짜 + 새로고침 + 시간 (우측 정렬)
-    ctrl_cols = st.columns([0.08, 0.35, 0.08, 0.12])
+    # 모든 요소를 한 줄에 컴팩트하게 배치: 📅기준일 [날짜] 🔄 0분전
+    ctrl_cols = st.columns([0.15, 0.12, 0.35, 0.18, 0.2])
 
     with ctrl_cols[0]:
-        st.markdown('<div style="font-size:36px;line-height:1;padding-top:12px;">📅</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:28px;padding-top:6px;">📅</div>', unsafe_allow_html=True)
 
     with ctrl_cols[1]:
-        st.markdown('<div class="date-label" style="padding-top:4px;">기준일</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:12px;color:#6B7B8C;padding-top:12px;">기준일</div>', unsafe_allow_html=True)
+
+    with ctrl_cols[2]:
+        st.markdown('<div class="ctrl-date-wrapper">', unsafe_allow_html=True)
         selected_date = st.date_input(
             "기준일",
             value=st.session_state.selected_sunday,
             label_visibility="collapsed",
             key="date_selector"
         )
+        st.markdown('</div>', unsafe_allow_html=True)
         new_sunday = selected_date if selected_date.weekday() == 6 else get_nearest_sunday(selected_date)
         if new_sunday != st.session_state.selected_sunday:
             st.session_state.selected_sunday = new_sunday
             st.rerun()
 
-    with ctrl_cols[2]:
-        st.markdown('<div style="font-size:24px;padding-top:14px;cursor:pointer;" title="데이터 새로고침" id="refresh-icon">🔄</div>', unsafe_allow_html=True)
-        if st.button("새로고침", key="refresh_btn", help="데이터 새로고침"):
+    with ctrl_cols[3]:
+        if st.button("🔄", key="refresh_btn", help="데이터 새로고침"):
             fetch_dashboard_data_from_api.clear()
             clear_sheets_cache()
             st.session_state['force_refresh'] = True
@@ -549,8 +599,8 @@ with col_controls:
             st.session_state['dashboard_cache_time'] = 0
             st.rerun()
 
-    with ctrl_cols[3]:
-        st.markdown(f'<div class="cache-time-text" style="padding-top:16px;">{cache_info}</div>', unsafe_allow_html=True)
+    with ctrl_cols[4]:
+        st.markdown(f'<div style="font-size:12px;color:#6B7B8C;padding-top:10px;">{cache_info}</div>', unsafe_allow_html=True)
 
 # 통계 데이터 계산
 val_total = 0
