@@ -547,7 +547,7 @@ with col_controls:
     # 주차 이동 방식: [◀] [📅 날짜] [▶] [🔄] [캐시시간]
     st.markdown('<div class="date-nav-area"></div>', unsafe_allow_html=True)
     selected_sunday = st.session_state.selected_sunday
-    today_sunday = get_sunday_of_week(date.today())
+    today_sunday = get_nearest_sunday(date.today())
     is_future = selected_sunday >= today_sunday
 
     ctrl_cols = st.columns([0.12, 0.5, 0.12, 0.12, 0.14])
